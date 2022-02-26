@@ -1,0 +1,682 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "GpStaging Dashboard API",
+    "version": "v1"
+  },
+  "paths": {
+    "/api/Config/params": {
+      "get": {
+        "tags": [
+          "Config"
+        ],
+        "summary": "Fetch the control parameters",
+        "description": "Fetch the entire collection of control parameters",
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/Config/maps": {
+      "get": {
+        "tags": [
+          "Config"
+        ],
+        "summary": "Fetch the warehouse/market/currency mapping information",
+        "description": "Fetch the entire collection of the warehouse mappings",
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/CrmOrders/{orderNumber}": {
+      "get": {
+        "tags": [
+          "CrmOrders"
+        ],
+        "summary": "Fetch specific order from CRM",
+        "parameters": [
+          {
+            "name": "orderNumber",
+            "in": "path",
+            "description": "",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/CrmOrders/Failed": {
+      "get": {
+        "tags": [
+          "CrmOrders"
+        ],
+        "summary": "Fetch list of orders that failed the PULL",
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/CrmOrders/Ignore": {
+      "post": {
+        "tags": [
+          "CrmOrders"
+        ],
+        "requestBody": {
+          "description": "",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "text/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "application": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/CrmOrders/Repull": {
+      "post": {
+        "tags": [
+          "CrmOrders"
+        ],
+        "summary": "Repull order(s)",
+        "description": "Remove (from staging database and) repull orders from CRM. Use this to pull fresh versions of orders that failed the pull but have since been corrected in the CRM.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "text/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "application": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/CrmOrders/RepullAllowMismatch": {
+      "post": {
+        "tags": [
+          "CrmOrders"
+        ],
+        "summary": "Repull order(s) allowing amount mismatch",
+        "description": "Attempt repulling failed orders and allow them to come in despite amount mismatches between specified order total and calculated order total or between order total and total payments",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "text/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "application": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/CrmOrders/pullorder/{orderNumber}": {
+      "post": {
+        "tags": [
+          "CrmOrders"
+        ],
+        "summary": "Intiate the pull from the CRM of an order",
+        "description": "Attempt to pull a specific order from the CRM",
+        "parameters": [
+          {
+            "name": "orderNumber",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/CrmOrders/pull/{days}": {
+      "post": {
+        "tags": [
+          "CrmOrders"
+        ],
+        "summary": "Initial a pull operation",
+        "description": "Initiate a full pull operation of any CRM orders that are ready (shipped)",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/GpOrders/{orderNumber}": {
+      "get": {
+        "tags": [
+          "GpOrders"
+        ],
+        "summary": "Fetch a specific order in GP by number",
+        "parameters": [
+          {
+            "name": "orderNumber",
+            "in": "path",
+            "description": "",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/GpOrders/pushorder/{orderNumber}": {
+      "post": {
+        "tags": [
+          "GpOrders"
+        ],
+        "summary": "Push specific order into GP",
+        "description": "Attempt to push a specific order into Dynamics GP",
+        "parameters": [
+          {
+            "name": "orderNumber",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/GpOrders/push": {
+      "post": {
+        "tags": [
+          "GpOrders"
+        ],
+        "summary": "Initiate a push action",
+        "description": "Initiate a push for all staged orders into Dynamics GP",
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/Logs": {
+      "get": {
+        "tags": [
+          "Logs"
+        ],
+        "summary": "Get paged log entries",
+        "description": "Provide parameters for searching the logs",
+        "parameters": [
+          {
+            "name": "StartDate",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "EndDate",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "Level",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Module",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Properties",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "MessageText",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "ExceptionText",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "SortDirection",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "PageNumber",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "RecordCount",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/Logs/Levels": {
+      "get": {
+        "tags": [
+          "Logs"
+        ],
+        "summary": "Fetch log levels",
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/Logs/Modules": {
+      "get": {
+        "tags": [
+          "Logs"
+        ],
+        "summary": "Fetch list of modules",
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/Purge": {
+      "get": {
+        "tags": [
+          "Purge"
+        ],
+        "summary": "See latest purge information",
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/Purge/{monthsToKeep}": {
+      "post": {
+        "tags": [
+          "Purge"
+        ],
+        "summary": "Purge old order data",
+        "description": "This method allows purging of data. Minimum number of months of data to keep is 6. To purge more recent info you must use the database. Returns table and number of records purged",
+        "parameters": [
+          {
+            "name": "monthsToKeep",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/StagingOrders/{orderNumber}": {
+      "get": {
+        "tags": [
+          "StagingOrders"
+        ],
+        "parameters": [
+          {
+            "name": "orderNumber",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/StagingOrders/Failed/{daysBack}": {
+      "get": {
+        "tags": [
+          "StagingOrders"
+        ],
+        "parameters": [
+          {
+            "name": "daysBack",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 99
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/StagingOrders/Ignore": {
+      "post": {
+        "tags": [
+          "StagingOrders"
+        ],
+        "summary": "Flag an order in the staging database for ignore",
+        "description": "This marks an order to say to not repull from the CRM or to try to push it to GP",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "text/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "application": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/StagingOrders/Retry": {
+      "post": {
+        "tags": [
+          "StagingOrders"
+        ],
+        "summary": "Retry order(s) push into GP",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "text/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "application": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/StagingOrders/Delete": {
+      "post": {
+        "tags": [
+          "StagingOrders"
+        ],
+        "summary": "Delete an order from the staging database",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "text/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "application": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/StagingOrders/summary/{gpPushStatusType}/{daysBack}": {
+      "get": {
+        "tags": [
+          "StagingOrders"
+        ],
+        "summary": "Returns market order summary for specific gpPushStatusType within a number of days",
+        "parameters": [
+          {
+            "name": "gpPushStatusType",
+            "in": "path",
+            "description": "",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/GpPushStatusTypeEnum"
+            }
+          },
+          {
+            "name": "daysBack",
+            "in": "path",
+            "description": "value of -1 means ALL days",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "GpPushStatustypeEnum": {
+        "enum": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "type": "integer",
+        "format": "int32"
+      }
+    }
+  }
+}

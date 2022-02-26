@@ -1,0 +1,143 @@
+a {
+  text-decoration: none;
+  color: inherit;
+}
+h1 > a {
+  color: cornflowerblue;
+}
+h2 > a:hover {
+  color: whitesmoke;
+}
+
+.navbar {
+  display: flex;
+  justify-content: space-around;
+  position: fixed;
+  z-index: 2;
+  width: 100%;
+  color: whitesmoke;
+  background-color: black;
+  font-size: 3rem;
+  box-shadow: 2px 2px 2px 1px whitesmoke;
+  min-height: 18rem;
+  margin: 0;
+}
+.logo {
+  display: flex;
+  align-items: center;
+  color: whitesmoke;
+  border-bottom: 2px solid whitesmoke;
+  margin: 2rem 2rem 2rem 0;
+}
+.logo:hover {
+  border-bottom: 2px solid orange;
+  -webkit-transition: all 500ms ease;
+  -moz-transition: all 500ms ease;
+  -ms-transition: all 500ms ease;
+  -o-transition: all 500ms ease;
+  transition: all 500ms ease;
+}
+.logo > a:hover {
+  color: orange;
+  -webkit-transition: all 500ms ease;
+  -moz-transition: all 500ms ease;
+  -ms-transition: all 500ms ease;
+  -o-transition: all 500ms ease;
+  transition: all 500ms ease;
+}
+.logo > h1 {
+  margin: 0;
+}
+.navbar-links {
+  display: flex;
+  max-height: 8rem;
+  margin-bottom: 2rem;
+}
+.navbar-links-mobile {
+  display: none;
+}
+.nav-link {
+  text-decoration: none;
+  color: cornflowerblue;
+  font-size: 2rem;
+}
+.list-item-text {
+  padding-right: 1.5rem;
+}
+
+.order-search {
+  display: flex;
+  align-items: center;
+}
+.search-field {
+  text-align: center;
+  color: orange;
+  font-size: 3.5rem;
+  background-color: black;
+  height: 30%;
+  max-width: 50rem;
+  border: 2px solid whitesmoke;
+  border-radius: 20px;
+  padding: 1rem;
+}
+.search-field:focus {
+  outline: none;
+}
+.search-field:focus::placeholder {
+  color: transparent;
+}
+
+//-----------Media Queries.------------
+@media all and (max-width: 1280px) {
+  .order-search {
+    max-width: 35rem;
+  }
+    .search-field {
+    width: 75%;
+  }
+  .search-field::placeholder {
+    font-size: 3rem;
+  }
+}
+
+@media all and (max-width: 1023px) {
+  nav.navbar {
+    flex-direction: column;
+    align-items: center;
+    max-height: 100%;
+  }
+  h1 {
+    text-align: center;
+  }
+  .search-field {
+    margin-bottom: 2rem;
+    width: 100%;
+  }
+  h5.list-item-text {
+    padding: 0;
+    margin: 1rem;
+  }
+}
+
+@media all and (max-width: 767px) {
+  .logo {
+    flex-direction: column;
+  }
+  .navbar-links  {
+    display: none;
+  }
+  .logo-links {
+    display: flex;
+  }
+  .navbar-links-mobile {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    margin: 1rem;
+  }
+  .list-item-text {
+    padding: 0;
+    margin: 0;
+  }
+}
+

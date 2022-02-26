@@ -1,0 +1,157 @@
+body {
+  font-family: 'open sans', sans-serif;
+  font-size: 2rem;
+}
+table {
+  width: 100%;
+  font-family: 'open sans', sans-serif;
+  font-size: 1.5rem;
+  margin-bottom: 1rem;
+  white-space: nowrap;
+}
+tr {
+  -webkit-transition: all 500ms ease;
+  -moz-transition: all 500ms ease;
+  -ms-transition: all 500ms ease;
+  -o-transition: all 500ms ease;
+  transition: all 500ms ease;
+}
+
+tr:nth-child(even) {
+  background: lightgray;
+}
+
+tr:nth-child(odd) {
+  background: whitesmoke;
+}
+
+tr:nth-child(even) > td > input[type=checkbox] {
+  border: 2px solid whitesmoke;
+}
+
+tr:hover {
+  background: cornflowerblue;
+  color: whitesmoke;
+  -webkit-transition: all 500ms ease;
+  -moz-transition: all 500ms ease;
+  -ms-transition: all 500ms ease;
+  -o-transition: all 500ms ease;
+  transition: all 500ms ease;
+}
+
+tr.header-row {
+  background-color: lightgray;
+}
+
+th {
+  text-align: left;
+  padding: .5rem .5rem .1rem .5rem;
+  color: cornflowerblue;
+  background-color: lightgray;
+
+  -webkit-transition: all 500ms ease;
+  -moz-transition: all 500ms ease;
+  -ms-transition: all 500ms ease;
+  -o-transition: all 500ms ease;
+  transition: all 500ms ease;
+}
+
+th:hover {
+  color: orange;
+  background-color: cornflowerblue;
+  border-radius: 7px 7px 0 0;
+  cursor: pointer;
+
+  -webkit-transition: all 500ms ease;
+  -moz-transition: all 500ms ease;
+  -ms-transition: all 500ms ease;
+  -o-transition: all 500ms ease;
+  transition: all 500ms ease;
+  
+  .link > a {
+    color: orange;
+  }
+}
+
+th::after {
+  content: '\2191';
+  visibility: hidden;
+  margin-left: 1rem;
+  font-size: 1.4rem;
+  font-weight: bolder;
+}
+
+th.ascending::after {
+  content: '\2191';
+  visibility: visible;
+  margin-left: 1rem;
+  font-size: 1.4rem;
+  font-weight: bolder;
+}
+
+th.descending::after {
+  content: '\2193';
+  visibility: visible;
+  margin-left: 1rem;
+  font-size: 1.4rem;
+  font-weight: bolder;
+}
+
+th.order-view-summary-col-header::after {
+  content: none;
+}
+
+.checkbox-th:hover {
+  background-color: cornflowerblue;
+  border-radius: 7px;
+}
+
+.header-row > th > input[type=checkbox] {
+  border: 2px solid whitesmoke;
+}
+
+.header-row > th > input[type=checkbox]:hover {
+  border: 2px solid orange;
+}
+
+td {
+  border: 1px solid lightgray;
+  border-radius: 5px;
+  padding: 0.5rem;
+}
+
+.select-one {
+  width: 3rem;
+}
+
+td.error-message {
+  white-space: pre-wrap;
+  font-size: 1.3rem;
+  min-width: 5rem;
+}
+td > a:hover {
+  color: orange;
+}
+.money {
+  text-align: right;
+}
+
+// ------------------ Media Queries ---------------
+@media all and (max-width: 1023px) {
+  th.ascending::after {
+    font-size: 1.2rem;
+  }
+  
+  th.descending::after {
+    font-size: 1.2rem;
+  }
+}
+@media all and (max-width: 768px) {
+  th.ascending::after {
+    font-size: 1rem;
+  }
+  
+  th.descending::after {
+    font-size: 1rem;
+  }
+}

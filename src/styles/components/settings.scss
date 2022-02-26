@@ -1,0 +1,128 @@
+.checkmark {
+  text-align: center;
+}
+.notes {
+  white-space: pre-wrap;
+}
+.params-table-vertical {
+  display: none;
+}
+.map-table-large {
+  display: flex;
+  align-items: flex-end;
+}
+.map-tables {
+  display: none;
+}
+.map-id {
+  display: none;
+}
+.map-tables-mobile {
+  display: none;
+}
+
+// -------------- Media Queries --------------
+@media all and (max-width: 1605px) {
+  .params-table, .map-table-large > table {
+   font-size: 1.2rem;
+ }
+}
+@media all and (max-width: 1450px) {
+  .map-tables > table {
+    font-size: 1.4rem
+  }
+}
+@media all and (max-width: 1380px) {
+  .map-table-large {
+    display: none;
+  }
+  .map-tables {
+    display: flex;
+    flex-direction: column;
+  }
+  
+ .params-table {
+   font-size: 1vh;
+ }
+ .map-tables {
+   flex-direction: column;
+   align-items: flex-end;
+ }
+ tr.map-id {
+   background: lightgray;
+ }
+ .map-id {
+   display: table-cell;
+   border: 1px solid transparent;
+ }
+}
+@media all and (max-width: 1280px) {
+  .params-table {
+    font-size: 1rem;
+  }
+ }
+@media all and (max-width: 1023px) and (orientation: portrait) {
+ .map-tables > table {
+   font-size: 12px;
+ }
+ .params-table-vertical {
+   display: flex;
+   flex-direction: column;
+   margin: 1rem 0 .5rem 0;
+   border: 1px solid whitesmoke;
+   border-radius: 7px;
+   padding: 1vh;
+   
+   tr {
+     background: lightgray;
+     border: 2px solid whitesmoke;
+     border-radius: 7px 7px 0 0;
+     margin: .2rem;
+   }
+
+   tr:hover {
+    background: cornflowerblue;
+    th {
+      border-radius: 7px 7px 0 0;
+    }
+   }
+
+   th {
+     background-color: whitesmoke;
+     border-radius: 7px;
+     font-size: 1.5rem;
+   }
+
+   th:hover {
+     color: cornflowerblue;
+     cursor: default;
+     border-radius: 7px 7px 0 0;
+   }
+
+   td {
+     border: none;
+     font-size: 1.5rem;
+   }
+ }
+ .params-table {
+   display: none;
+ }
+}
+
+@media all and (max-width: 768px) {
+ .order-details-tables {
+   flex-direction: column;
+   align-items: flex-end;
+ }
+ .map-tables {
+   display: none;
+ }
+ .map-tables-mobile {
+   display: flex;
+   flex-direction: column;
+   
+   table {
+     font-size: 12px;
+   }
+ }
+}
