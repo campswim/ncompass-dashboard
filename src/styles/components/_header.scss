@@ -22,23 +22,45 @@ h2 > a:hover {
   min-height: 18rem;
   margin: 0;
 }
-.logo {
+.logo-container {
   display: flex;
-  align-items: center;
+  align-items: flex-end;
+  justify-content: center;
   color: whitesmoke;
   border-bottom: 2px solid whitesmoke;
-  margin: 2rem 2rem 2rem 0;
+  margin: 5rem 2rem 2rem 0;
+  position: relative;
+
+  h1 {
+    margin: 0px;
+  }
+
+  -webkit-transition: all 500ms ease;
+  -moz-transition: all 500ms ease;
+  -ms-transition: all 500ms ease;
+  -o-transition: all 500ms ease;
+  transition: all 500ms ease;
+
 }
-.logo:hover {
+.logo-container:hover {
   border-bottom: 2px solid orange;
+  color: cornflowerblue;
+  cursor: pointer;
   -webkit-transition: all 500ms ease;
   -moz-transition: all 500ms ease;
   -ms-transition: all 500ms ease;
   -o-transition: all 500ms ease;
   transition: all 500ms ease;
 }
+.logo {
+  width: 20rem;
+  height: auto;
+  position: absolute;
+  bottom: -5rem;
+  left: -4rem;
+}
 .logo > a:hover {
-  color: orange;
+  // color: orange;
   -webkit-transition: all 500ms ease;
   -moz-transition: all 500ms ease;
   -ms-transition: all 500ms ease;
@@ -120,8 +142,13 @@ h2 > a:hover {
 }
 
 @media all and (max-width: 767px) {
-  .logo {
+  .logo-container {
     flex-direction: column;
+    justify-content: flex-end;
+  }
+  .logo {
+    position: absolute;
+    bottom: 1rem;
   }
   .navbar-links  {
     display: none;

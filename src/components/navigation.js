@@ -6,7 +6,8 @@ import OrderView from '../pages/order-view/order-view';
 import Settings from '../pages/settings/settings';
 import routes from '../routes';
 import { ListItem } from '@mui/material';
-import {ReactComponent as Logo} from '../logo.svg';
+import nCompassLogo from '../nCompass_logo_fullsize_square.png'; // For logo.otherExtension
+// import {ReactComponent as Logo} from '../logo.svg';  // For logo.svg.
 
 const NavBar = () => {
   const [linkId, setLinkId] = useState(null);
@@ -99,8 +100,9 @@ const NavBar = () => {
     <Router>
       <nav className='navbar'>
         <div className='logo-links'>
-          <div className="logo">
-            <a href={process.env.REACT_APP_HOME}><Logo /></a>
+          <div className="logo-container">
+            {/* <a href={process.env.REACT_APP_HOME}><Logo /></a> */}
+            <a href={process.env.REACT_APP_HOME}><img className="logo" src={nCompassLogo} alt="logo" /></a>
             <h1>{' '} Orders</h1>
           </div>
           <div className="navbar-links-mobile">{links}</div>
