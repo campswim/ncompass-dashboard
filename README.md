@@ -1,51 +1,44 @@
-# nCompass
-
-## Yolil Order-movement Dashboard
+# nCompass | Order-movement Dashboard Demo
 
 ## Authors
 
-Chad Larson
-Nathan Cox
+Nathan Cox (nate@campswim.co)
+Chad Larson (chad@ncompass.org)
 
-## To Run the Dashboard Locally
+## Locations
 
-1. Start the VPN, GlobalProtect.
-2. Run the nodemon command from the app's root directory on the command line.
+1. Front-end url: <https://ncompass-dashboard.netlify.app/failed-orders>.
+2. Back-end url: <https://dashboard.heroku.com/apps/ncompass-dashboard-api>.
+
+## To Run the App Locally
+
+- run `npm i` from the CLI to install all necessary dependencies.
+- run `npm start` from the CLI, ensuring that the API is also running.
+
+## Description
+
+This mockup of the nCompass order-movement dashboard demonstrates the utility of this internal application for accounting departments keen on tracking an order through its full lifecycle, from origination to database storage, with error tracking and resolution built in.
 
 ## User Stories
-
-- Map/Param pages
-
-  [x] As an administrator, I would like to review the mappings/parameters so I can spot discrepancies in the way our business is importing orders.  
-  [x] As an administrator, I want to be able to sort the rows by any column to make reviewing easier.  
-  [x] As an administrator, I want this page to be aesthetically pleasing as well as user friendly.  
-  [x] Remove the timer from the local storage, once you've integrated it elsewhere, since this data is rarely updated.
-  [ ] As a user, I want all data relevant to settings available, but only a summary shown by default, requiring a click to expand for a full view.
-
-- Purge page
-
-  [ ] As an administrator, I want to purge old orders from the staging system and see the number of orders purged.
 
 - Home Page
 
   - Pushed Orders
 
-    [ ] As a user, I want to see a graph of orders pushed into GP today.  
-    [ ] As a user, I want to see a graph of orders pushed into GP since yesterday.  
-    [ ] As a user, I want to see a graph of orders pushed into GP in the last seven days.  
-    [ ] As a user, I want to see a graph of orders pushed in the last thirty days.  
-    [ ] As a user, I want to be able to choose the number of days shown in the graph and have my choice persist across sessions.
+    [x] As a user, I want to see a list of orders pushed into the storage database.  
+    [x] As a user, I want to be able to choose the number of days back the list(s) will display.
+    [ ] As a user, I want my my above choice(s) to persist across sessions.
 
   - Staged Orders
 
-    [x] As a user, I want to see a chart of pending orders by market (pulled but not pushed).  
-    [x] As a user, I want to see a chart of all orders ignored.  
-    [x] As a user, I want to see a chart of orders that have failed to push.
+    [x] As a user, I want to see a list of all pending orders by market (pulled but not pushed).  
+    [x] As a user, I want to see a list of all orders ignored, by market.  
+    [x] As a user, I want to see a list of all orders that have failed to push.
 
   - Actions
 
-    [x] As an administrator, I want to initiate a pull operation manually.  
-    [x] As an administrator, I want to initiate a push operation manually.
+    [ ] As an administrator, I want to initiate a pull operation manually.  
+    [ ] As an administrator, I want to initiate a push operation manually.
 
 - Failed-orders Page
 
@@ -75,52 +68,32 @@ Nathan Cox
    [x] push an order manually if it is in Staging and not yet in GP;
    [ ] hide the pull option for the CRM if the order is in staging.
 
-- Logging Page
+- Map/Param pages
 
-- [ ] User Authorization (wherever there is an administrator story above)
+  [x] As an administrator, I would like to review the mappings/parameters so I can spot discrepancies in the way our business is importing orders.  
+  [x] As an administrator, I want to be able to sort the rows by any column to make reviewing easier.  
+  [x] As an administrator, I want this page to be aesthetically pleasing as well as user friendly.  
+  [x] Remove the timer from the local storage, once you've integrated it elsewhere, since this data is rarely updated.
+  [ ] As a user, I want all data relevant to settings available, but only a summary shown by default, requiring a click to expand for a full view.
 
-- Misc
+- Planned future functionality
 
-  [ ] Hover hints for buttons.  
-  [x] Dark theme.
+  - User Authentication and Authorization
 
-## Routes
+    [ ] User login and logout.
+    [ ] User Authorization (wherever there is an administrator story).
+  
+  - Purge page
 
-- Config-controller paths
+    [ ] As an administrator, I want to purge old orders from the staging system and see the number of orders purged.
 
-  [x] GET: /api/Config/params  
-  [x] GET: /api/Config/maps
+  - Logging Page
 
-- CRM Orders paths:
+  - Misc
 
-  [x] GET one: /api/CrmOrders/{orderNumber}  
-  [x] GET: /api/CrmOrders/Failed  
-  [x] POST: /api/CrmOrders/Ignore  
-  [ ] POST: /api/CrmOrders/Pull (pull all?)
-  [x] POST: /api/CrmOrders/Repull  
-  [x] POST: /api/CrmOrders/RepullAllowMismatch
-
-- Staging-orders paths:
-
-  [x] GET: /api/StagingOrders/summary/{gpPushStatusType}/{daysBack}  
-  [x] GET one: /api/StagingOrders/{orderNumber}  
-  [x] Get all failed: /api/StagingOrders/Failed  
-  [x] POST: /api/StagingOrders/Ignore  
-  [x] POST: /api/StagingOrders/Retry (Repush)  
-  [x] POST: /api/StagingOrders/Delete
-  [ ] POST: /api/StagingOrders/Push (push all?)
-
-- GP Orders paths:
-
-  [x] GET one: /api/GpOrders/{orderNumber}  
-  [ ] GET: /api/GpOrders/pushorder/{orderNumber}  
-  [ ] GET: /api/GpOrders/push
-
-- Purge-data path (we did not discuss this; it should be another page and secured by the role auth so only admins can run this):
-
-  [ ] GET: /api/Purge/DataLevels  
-  [ ] POST: /api/Purge/{monthsToKeep}
+    [ ] Hover hints for buttons.  
+    [ ] Dark-light theme toggling.
 
 ## Sources
 
-- The sorting algorithm used in the useSort hook came from [here](https://www.smashingmagazine.com/2020/03/sortable-tables-react/).
+- The sorting algorithm used in the useSort hook was adapted from [here](https://www.smashingmagazine.com/2020/03/sortable-tables-react/).

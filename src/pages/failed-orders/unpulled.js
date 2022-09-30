@@ -29,6 +29,7 @@ const UnPulled = props => {
     return sortConfig.key === name ? sortConfig.direction : undefined;
   };
 
+
   // Call the api to return the details of the selected order (on the order-view page).
   const apiCall = (path, orders) => {
     axios({
@@ -124,35 +125,46 @@ const UnPulled = props => {
   useEffect(() => {
     let mounted = true;
     if (mounted) setUnpulled(props.data);
-    return () => (mounted = false);
+    return () => mounted = false;
   }, [props.data]);
 
   useEffect(() => {
-    if (isChecked.length === unpulled.length) setAllChecked(true);
-    else setAllChecked(false);
+    let mounted = true;
+    if (mounted) {
+      if (isChecked.length === unpulled.length) setAllChecked(true);
+      else setAllChecked(false);
+    }
+    return () => mounted = false;
   }, [isChecked, unpulled]);
 
   useEffect(() => {
-    if (isChecked.length > 0) setActiveLink(true);
-    else setActiveLink(false);
-
+    let mounted = true;
+    if (mounted) {
+      if (isChecked.length > 0) setActiveLink(true);
+      else setActiveLink(false);
+    }
+    return () => mounted = false;
   }, [isChecked]);
 
   // Determine the width of the browser window and set toggles accordingly.
   useLayoutEffect(() => {
+    let mounted = true;
     const browserWidth = window.innerWidth;
     const handleResize = () => {
       setWidth(window.innerWidth);
     } 
     window.onresize = handleResize;
 
-    if (browserWidth < 768) {
-      setToggleShorterError(true);
-      setShortenDates(true);
-    } else {
-      setToggleShorterError(false);
-      setShortenDates(false);
+    if (mounted) {
+      if (browserWidth < 768) {
+        setToggleShorterError(true);
+        setShortenDates(true);
+      } else {
+        setToggleShorterError(false);
+        setShortenDates(false);
+      }
     }
+    return () => mounted = false;
   }, [width]);
 
   return props.error ? (
@@ -299,10 +311,10 @@ const UnPulled = props => {
           </th>
         </tr>
       </thead>
-      <tbody >
+      <tbody>
       {items.length !== 0 ? (
-        items.map((item, key) => (
-            <tr key={key}>
+        items.map((item, key) => (  
+          <tr key={key}>
               <td className='select-one'>
                 <Checkbox
                   type='checkbox'

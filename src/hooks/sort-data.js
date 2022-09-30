@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 
-const useSort = (items, caller) => {
+const useSort = (items, caller) => {  
   if (!items) items = [];
   const [sortConfig, setSortConfig] = useState({
     key: caller === 'params' ? 'enabledDate' : caller === 'map' ? 'id' : caller === 'unpulled' || caller === 'unpushed' ? 'orderNumber' : caller === 'order-details' ? 'lineNumber' : null,
