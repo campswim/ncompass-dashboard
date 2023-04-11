@@ -1,4 +1,5 @@
 const formatCurrency = (num, currency = 'USD', locale = 'en-US') => {
+  currency = currency.toUpperCase();
   if (currency === 'PHP') locale = 'fil';
   if (currency === 'AUS') currency = 'USD';
   if (currency.includes('Z')) 
@@ -10,7 +11,9 @@ const formatCurrency = (num, currency = 'USD', locale = 'en-US') => {
           : currency === 'Z-MXN'
           ? 'MXN'
           : 'USD';
-  return new Intl.NumberFormat(locale, { style: 'currency', currency }).format(num);
+  const result = new Intl.NumberFormat(locale, { style: 'currency', currency }).format(num);
+  console.log('Currency formatter: ', {result});
+  return result;
 }
 
 export default formatCurrency;

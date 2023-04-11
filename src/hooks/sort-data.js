@@ -1,7 +1,9 @@
 import { useState, useMemo } from 'react';
 
-const useSort = (items, caller) => {  
+const useSort = (items, caller) => {
   if (!items) items = [];
+  if (items['data'] && items['data']['failedPulls']) items = items.data.failedPulls;
+
   const [sortConfig, setSortConfig] = useState({
     key: caller === 'params' ? 'enabledDate' : caller === 'map' ? 'id' : caller === 'unpulled' || caller === 'unpushed' ? 'orderNumber' : caller === 'order-details' ? 'lineNumber' : null,
     direction: 'ascending',

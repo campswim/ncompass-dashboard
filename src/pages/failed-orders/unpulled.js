@@ -29,7 +29,6 @@ const UnPulled = props => {
     return sortConfig.key === name ? sortConfig.direction : undefined;
   };
 
-
   // Call the api to return the details of the selected order (on the order-view page).
   const apiCall = (path, orders) => {
     axios({
@@ -104,20 +103,24 @@ const UnPulled = props => {
     if (shortenDates && shortOrderDates.length > 0 && shortAttemptedDates.length > 0) {
       for (let i = 0; i < items.length; i++) {
         const cell = shortOrderDates[i];
-        cell.textContent = items[i].orderDate.split('T')[0]
+        const orderDate = new Date(parseInt(items[i].orderDate)).toISOString();
+        cell.textContent = orderDate.split('T')[0];
       };
       for (let i = 0; i < items.length; i++) {
         const cell = shortAttemptedDates[i];
-        cell.textContent = items[i].at.split('T')[0]
+        const orderDate = new Date(parseInt(items[i].orderDate)).toISOString();
+        cell.textContent = orderDate.split('T')[0];
       };
     } else if (!shortenDates && longOrderDates.length > 0 && longAttemptedDates.length > 0 ) {
       for (let i = 0; i < items.length; i++) {
         const cell = longOrderDates[i];
-        cell.textContent = `${items[i].orderDate.split('T')[0]} at ${items[i].orderDate.split('T')[1].substring(0, 5)}`;
+        const orderDate = new Date(parseInt(items[i].orderDate)).toISOString();
+        cell.textContent = `${orderDate.split('T')[0]} at ${orderDate.split('T')[1].substring(0, 5)}`;
       };
       for (let i = 0; i < items.length; i++) {
         const cell = longAttemptedDates[i];
-        cell.textContent = items[i].at ? `${items[i].at.split('T')[0]} at ${items[i].at.split('T')[1].substring(0, 5)}` : 'None';
+        const at = new Date(parseInt(items[i].at)).toISOString();
+        cell.textContent = items[i].at ? `${at.split('T')[0]} at ${at.split('T')[1].substring(0, 5)}` : 'None';
       };
     }
   }
@@ -171,7 +174,7 @@ const UnPulled = props => {
     <div>{props.error.message}</div>
     ) : !props.isLoaded ? (
       <div>Loading...</div>
-    ) : props.getPath === 'CrmOrders/Failed' ? (
+    ) : props.getQuery === 'failedPulls' ? (
     <>
       <div className='order-info'>
         <p className="order-info-number-display">Selected: {isChecked.length}</p>
@@ -253,7 +256,7 @@ const UnPulled = props => {
             </div>
             ) : (
               <div className="retried-order-set">
-              <p>The was a "{error}" when the following orders were {message(props.action)}:</p>
+              <p>There was a "{error}" when the following orders were {message(props.action)}:</p>
               <div className='orders-in-array'>
                 {props.order.map((id, key) => (
                   <p key={key}>{id}</p>))}
@@ -313,7 +316,7 @@ const UnPulled = props => {
       </thead>
       <tbody>
       {items.length !== 0 ? (
-        items.map((item, key) => (  
+        items.map((item, key) => (
           <tr key={key}>
               <td className='select-one'>
                 <Checkbox
@@ -335,15 +338,15 @@ const UnPulled = props => {
                 </Link>
               </td>
               <td className={`order-dates ${shortenDates}`}>
-                {item.orderDate.split('T')[0]} at{' '}
-                {item.orderDate.split('T')[1].substring(0, 5)}
+                {new Date(parseInt(item.orderDate)).toISOString().split('T')[0]} at{' '}
+                {new Date(parseInt(item.orderDate)).toISOString().split('T')[1].substring(0, 5)}
               </td>
-              <td>{formatCurrency(item.orderTotalAmount, item.currencyCode)}</td>
+              <td>{formatCurrency(item.orderTotal, item.currencyCode)}</td>
               <td className={`attempted-dates ${shortenDates}`}>
-                {item.at ? item.at.split('T')[0] : 'None'} at{' '}
-                {item.at ? item.at.split('T')[1].substring(0, 5) : null}
+                {item.at ? new Date(parseInt(item.at)).toISOString().split('T')[0] : 'None'} at{' '}
+                {item.at ? new Date(parseInt(item.at)).toISOString().split('T')[1].substring(0, 5) : null}
               </td>
-              <td name={item.orderNumber} className={`error-message ${toggleShorterError}`} onClick={() => showErrorMessage(item.orderNumber)}>{!toggleShorterError ? item.errorMessage : `${item.errorMessage.slice(0, 18)} (...)`}</td>
+              <td name={item.orderNumber} className={`error-message ${toggleShorterError}`} onClick={() => showErrorMessage(item.orderNumber)}>{!toggleShorterError ? item.message : `${item.message.slice(0, 18)} (...)`}</td>
               <td name={item.orderNumber} id={item.orderNumber} className='error-message-unpulled'>
                 <span className="x-close">X</span>
                 {item.message}

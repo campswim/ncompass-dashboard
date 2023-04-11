@@ -7,10 +7,9 @@ const FailedOrders = () => {
   const params = useLocation();
   let state = null;
   if (params) state = params.state;
-  if (state) 
-    var { order, postPath, action, id } = state; // This is for user-initiated actions, not the get-all-failed called.
+  if (state) var { order, postPath, action, id } = state; // This is for user-initiated actions, not the get-all-failed called.
 
-  const [getPath, setGetPath] = useState(id === 'unpushed' ? 'StagingOrders/Failed' : id === 'unpulled' ? 'CrmOrders/Failed' : 'CrmOrders/Failed');
+  const [getQuery, setGetQuery] = useState(id === 'unpushed' ? 'failedPushes' : id === 'unpulled' ? 'CrmOrders/Failed' : 'failedPulls');
   const [click, setClick] = useState('');
   const [date, setDate] = useState([
     new Date().getDate(),
@@ -33,7 +32,7 @@ const FailedOrders = () => {
       new Date().getSeconds(),
     ]);
     formatDate(date);
-    setGetPath(event.target.value);
+    setGetQuery(event.target.value);
     setClick(true);
 
   const chosenButton = event.target.id;
@@ -53,15 +52,15 @@ const FailedOrders = () => {
       setFormattedDate(formatDate(date));
       if (state && (!click || click === '')) {
         if (action === 'Repush')
-          setGetPath('StagingOrders/Failed')
+          setGetQuery('failedPushes'); // Failed pushes.
         else if (action === 'Repull' || action === 'RepullAllowMismatch')
-          setGetPath('CrmOrders/Failed');
+          setGetQuery('failedPulls'); // Failed pulls.
       };
       return () => (mounted = false);
     }
   }, [date, state, click, action]);
 
-  return getPath ? (
+  return getQuery ? (
     <>
       <div className='order-actions'>
         <form>
@@ -80,7 +79,7 @@ const FailedOrders = () => {
           {formattedDate.amOrPm}
         </p>
       </div>
-      <Api getPath={getPath} postPath={postPath} order={order} action={action} callerId={id}/>
+      <Api getQuery={getQuery} postPath={postPath} order={order} action={action} callerId={id}/>
     </>
   ) : (
     ''

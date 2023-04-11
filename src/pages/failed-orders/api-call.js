@@ -8,26 +8,39 @@ const Api = props => {
   const [unpulled, setUnpulled] = useState([]);
   const [error, setError] = useState(null);
   const [isLoaded, setIsLoaded] = useState(false);
-  const [path, setPath] = useState(null);
-
-  const recallApi = path => {
-    setPath(path);
+  const [query, setQuery] = useState(props.getQuery);
+  
+  const recallApi = query => {
+    setQuery(query);
   };
 
-  useEffect(() => {
+  useEffect(() => {   
     let mounted = true;
-    axios({
-      method: 'get',
-      baseURL: process.env.REACT_APP_API,
-      url: path ? path : props.getPath,
-    }).then(
+    let queryString = `query ${query}`;
+    queryString = 'failedPushes' === query ? queryString + `{${query} {OrderNumber Market Warehouse OrderTotalAmount CustomerNumber OrderDate StagingImportDate, ErrorCode, ErrorMessage}}` : queryString + `{${query} {id, orderNumber, orderDate, orderTotal, currencyCode, message, at, ignoredAt, exception}}`;
+    
+    const graphQlQuery = {
+      operation: query,
+      query: queryString ,
+      variables: {}
+    };
+  
+    const options = {
+      method: 'POST',
+      url: process.env.REACT_APP_API,
+      data: JSON.stringify(graphQlQuery),
+      headers: {'Content-Type': 'application/json'}
+    };
+
+    axios.request(options).then(
       res => {
+        console.log({res});
         if (mounted) {
-          if (props.getPath === 'StagingOrders/Failed') {
+          if (props.getQuery === 'failedPushes') {
             setUnpushed(res.data);
             setIsLoaded(true);
             setError(null);
-          } else if (props.getPath === 'CrmOrders/Failed') {
+          } else if (props.getQuery === 'failedPulls') {
             setUnpulled(res.data);
             setIsLoaded(true);
             setError(null);
@@ -35,20 +48,22 @@ const Api = props => {
         }
       },
       err => {
+        console.log({err});
         if (mounted) {
           setError(err);
           setIsLoaded(true);
         }
       }
     );
-    setPath(null);
+    // setQuery(null);
+
     return () => (mounted = false);
-  }, [props.getPath, path]);
+  }, [props.getQuery, query]);
 
   useEffect(() => {
-    if (props.callerId === 'order-details' && props.getPath !== 'StagingOrders/Failed') 
-      setPath('StagingOrder/Failed');
-  }, [props.callerId, props.getPath]);
+    if (props.callerId === 'order-details' && props.getQuery !== 'failedPushes') 
+      setQuery('failedPushes');
+  }, [props.callerId, props.getQuery]);
 
   return (
     <>
@@ -56,7 +71,7 @@ const Api = props => {
         data={unpulled}
         error={error}
         isLoaded={isLoaded}
-        getPath={props.getPath}
+        getQuery={props.getQuery}
         postPath={props.postPath}
         recall={recallApi}
         order={props.order}
@@ -66,7 +81,7 @@ const Api = props => {
         data={unpushed}
         error={error}
         isLoaded={isLoaded}
-        getPath={props.getPath}
+        getQuery={props.getQuery}
         postPath={props.postPath}
         recall={recallApi}
         order={props.order}
