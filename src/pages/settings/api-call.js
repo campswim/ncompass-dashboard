@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-
 import Map from './map';
 import Params from './params';
 
@@ -13,32 +12,43 @@ export default function ApiCall(props) {
   // Call the api.
   useEffect(() => {
     let mounted = true;
-    axios({
-      method: 'get',
-      baseURL: process.env.REACT_APP_API,
-      url: props.path,
-    }).then(
-      res => {
-        if (mounted) {
-          if (props.path === 'config/params') {
-            setParams(res.data);
-            setIsLoaded(true);
-          } else if (props.path === 'config/maps') {
-            setMap(res.data);
+    if (mounted) {
+      let queryString = `query ${props.path} {${props.path} `;
+      queryString += 'maps' === props.path ? `{Id IsoCountryCode ErpCompanyId IsoCurrencyCode ErpCurrencyCode SourceWarehouse SourceShipMethod DestinationWarehouse ReturnsWarehouse IsVAT UseForErpPull ProcessingSequence ActivatedAt DeactivatedAt CreatedAt CreatedBy ModifiedAt ModifiedBy}}` : `{Name Value ModuleId Category SubCategory ValueType Notes EnabledDate CreatedAt CreatedBy ModifiedAt ModifiedBy}}`;
+      
+      const graphQlQuery = {
+        operation: props.path,
+        query: queryString,
+        variables: {}
+      };
+      const options = {
+        method: 'POST',
+        url: process.env.REACT_APP_API,
+        data: JSON.stringify(graphQlQuery),
+        headers: {'Content-Type': 'application/json'}
+      };
+
+      axios.request(options).then(
+        res => {        
+          if (props.path === 'params') {
+              setParams(res.data.data);
+              setIsLoaded(true);
+            } else if (props.path === 'maps') {
+              setMap(res.data.data);
+              setIsLoaded(true);
+            }
+        },
+        err => {
+          if (mounted) {
+            setError(err);
             setIsLoaded(true);
           }
         }
-      },
-      err => {
-        if (mounted) {
-          setError(err);
-          setIsLoaded(true);
-        }
-      }
-    );
+      );
+    }
     return () => (mounted = false);
   }, [props.path]);
-
+      
   return (
     <>
       <Params
@@ -47,7 +57,11 @@ export default function ApiCall(props) {
         isLoaded={isLoaded}
         path={props.path}
       />
-      <Map mapData={map} error={error} isLoaded={isLoaded} path={props.path} />
+      <Map 
+        mapData={map} 
+        error={error} 
+        isLoaded={isLoaded} 
+        path={props.path} />
     </>
   );
 }

@@ -4,6 +4,10 @@
 .notes {
   white-space: pre-wrap;
 }
+.params-table td {
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
 .params-table-vertical {
   display: none;
 }

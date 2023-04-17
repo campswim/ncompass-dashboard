@@ -12,7 +12,6 @@ const formatCurrency = (num, currency = 'USD', locale = 'en-US') => {
           ? 'MXN'
           : 'USD';
   const result = new Intl.NumberFormat(locale, { style: 'currency', currency }).format(num);
-  console.log('Currency formatter: ', {result});
   return result;
 }
 

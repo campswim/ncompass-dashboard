@@ -8,9 +8,9 @@ const FailedOrders = () => {
   let state = null;
   if (params) state = params.state;
   if (state) var { order, postPath, action, id } = state; // This is for user-initiated actions, not the get-all-failed called.
-
-  const [getQuery, setGetQuery] = useState(id === 'unpushed' ? 'failedPushes' : id === 'unpulled' ? 'CrmOrders/Failed' : 'failedPulls');
-  const [click, setClick] = useState('');
+  
+  const [getQuery, setGetQuery] = useState('failedPulls');
+  const [click, setClick] = useState(false);
   const [date, setDate] = useState([
     new Date().getDate(),
     new Date().getMonth(),
@@ -20,9 +20,14 @@ const FailedOrders = () => {
     new Date().getSeconds(),
   ]);
   const [formattedDate, setFormattedDate] = useState({});
+  const [currentPage, setCurrentPage] = useState('');
 
   const handleClick = event => {
     event.preventDefault();
+    const chosenPage = event.target.value;
+    let activeButton, inactiveButton;
+
+    setClick(true);
     setDate([
       new Date().getDate(),
       new Date().getMonth(),
@@ -32,44 +37,61 @@ const FailedOrders = () => {
       new Date().getSeconds(),
     ]);
     formatDate(date);
-    setGetQuery(event.target.value);
-    setClick(true);
+    setCurrentPage(chosenPage);
 
-  const chosenButton = event.target.id;
-    let activeButton, inactiveButton;
-    if (chosenButton) {
-      activeButton = document.getElementById(chosenButton);
+    if (chosenPage) {
+      if (chosenPage === getQuery) setGetQuery(null);
+      else setGetQuery(chosenPage);
+  
+      activeButton = document.getElementById(chosenPage);
       activeButton.setAttribute('class', 'active-button');
-      if (chosenButton === 'CrmOrders') inactiveButton = document.getElementById('StagingOrders');
-      else inactiveButton = document.getElementById('CrmOrders');
-      inactiveButton.setAttribute('class', 'inactive-button');
+
+      if (chosenPage === 'failedPulls') inactiveButton = document.getElementById('failedPushes');
+      else inactiveButton = document.getElementById('failedPulls');
     }
+
+    inactiveButton.setAttribute('class', 'inactive-button');
   };
 
   useEffect(() => {
     let mounted = true;
     if (mounted) {
       setFormattedDate(formatDate(date));
-      if (state && (!click || click === '')) {
-        if (action === 'Repush')
-          setGetQuery('failedPushes'); // Failed pushes.
-        else if (action === 'Repull' || action === 'RepullAllowMismatch')
-          setGetQuery('failedPulls'); // Failed pulls.
-      };
-      return () => (mounted = false);
-    }
-  }, [date, state, click, action]);
+      if (!click) {
+        if (state) {
+          if (action === 'Repush') setGetQuery('failedPushes'); // Failed pushes.
+          else if (action === 'Repull' || action === 'RepullAllowMismatch') setGetQuery('failedPulls'); // Failed pulls.
+        }
+        if (getQuery) {
+          document.getElementById(getQuery).setAttribute('class', 'active-button');
+          document.getElementById(getQuery === 'failedPulls' ? 'failedPushes' : 'failedPulls').setAttribute('class', 'inactive-button');
+        }
+      } else {
+        if (!getQuery) setGetQuery(currentPage);
+        if (getQuery) {
+          document.getElementById(getQuery).setAttribute('class', 'active-button');
+          document.getElementById(getQuery === 'failedPulls' ? 'failedPushes' : 'failedPulls').setAttribute('class', 'inactive-button');
+        }
+      }
 
+      if (sessionStorage.getItem('action')) {
+        setClick(false);
+        sessionStorage.clear();
+      }
+    }
+    return () => (mounted = false);
+  }, [date, state, click, action, currentPage, getQuery]);
+  
   return getQuery ? (
     <>
       <div className='order-actions'>
         <form>
-          <button className='active-button' id='CrmOrders' value='CrmOrders/Failed' onClick={handleClick}>
+          <button id='failedPulls' value='failedPulls' onClick={handleClick}>
             Failed to Pull
           </button>
         </form>
         <form>
-          <button className='inactive-button' id='StagingOrders' value='StagingOrders/Failed' onClick={handleClick}>
+          <button id='failedPushes' value='failedPushes' onClick={handleClick}>
             Failed to Push
           </button>
         </form>
@@ -79,7 +101,7 @@ const FailedOrders = () => {
           {formattedDate.amOrPm}
         </p>
       </div>
-      <Api getQuery={getQuery} postPath={postPath} order={order} action={action} callerId={id}/>
+      <Api getQuery={getQuery} postPath={postPath} order={!click ? order : ''} action={action} callerId={id} />
     </>
   ) : (
     ''

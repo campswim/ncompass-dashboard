@@ -32,43 +32,57 @@ const UnPushed = props => {
   };
 
   // Post api call for action buttons on selection of one or more failed items.
-  const apiCall = (path, orders, method) => {
-    let pathWithId = null;
-    console.log({method});
-    if (method === 'DELETE') pathWithId = `${path}/${orders[0]}`;
-    axios({
-      method: method,
-      baseURL: process.env.REACT_APP_API,
-      url: pathWithId ? pathWithId : path,
-      data: orders,
-    }).then(
+  const apiCall = (path, orders) => {
+    if ('failedPushOrderById' === path || 'StagingOrders/Ignore' === path || 'StagingOrders/Failed' === path) {
+      setError('This action is currently disabled');
+      return;
+    }
+    
+    const query = path;
+    let queryString = `query ${query}($ids: [String]!)`;
+    // Define the graphQL query string here based on the path. See unpulled for a model.
+    const graphQlQuery = {
+      operation: query,
+      query: queryString,
+      variables: {ids: orders}
+    };
+    const options = {
+      method: 'POST',
+      url: process.env.REACT_APP_API,
+      data: JSON.stringify(graphQlQuery),
+      headers: {'Content-Type': 'application/json'}
+    };
+
+    axios.request(options).then(
       res => {
         setResponse(res.data);
         setStatus(res.status);
+        setError(null);
       },
       err => {
+        console.log({err});
         setError(err.message);
       }
     );
   };
 
   // Retry / Ignore / Delete actions: POST: /api/StagingOrders/Retry / Ignore / Delete
-  const action = (path, action) => {
-    let method = 'POST';
-    if (action === 'Delete') {
-      method = 'DELETE';
-    }
-    if (isChecked.length !== 0) apiCall(path, isChecked, method);
+  const action = (path) => {
+    if (isChecked.length !== 0) apiCall(path, isChecked);
     else alert('Please tick an order.');
     setIsChecked([]);
     setAllChecked(false);
-    props.recall('StagingOrders/Failed');
+    props.recall('failedPushes');
+
+    // Store a flag in localStorage to indicate that a new action has been initiated.
+    sessionStorage.setItem('action', true);
   };
 
-  const handleSelectAll = event => {
-    // Because the setting of state is asynchronous, this next line will not set allChecked to its opposite until after setChecked runs, meaning that when allChecked === true, its a step behind, explaining why setChecked is emptied.
+  const handleSelectAll = () => {
+    // Because the setting of state is asynchronous, this next line will not set allChecked to its opposite until after setChecked runs, meaning that when allChecked === true, it's a step behind, explaining why setChecked is emptied.
+    const unpushedData = unpushed['data'] && unpushed['data']['failedPushes'] ? unpushed['data']['failedPushes'] : '';
     setAllChecked(!allChecked);
-    setIsChecked(unpushed.map(item => item.orderNumber));
+    setIsChecked(unpushedData.map(item => item.OrderNumber));
     if (allChecked) setIsChecked([]);
   };
 
@@ -120,36 +134,56 @@ const UnPushed = props => {
     return pastTenseVerb;
   };
 
-    // Display long or short versions of the date based on browser width.
-    const shortOrderDates = document.getElementsByClassName('order-dates true');
-    const longOrderDates = document.getElementsByClassName('order-dates false');
-  
-    if (items.length > 0) {
-      if (shortenDates && shortOrderDates.length > 0) {
-        for (let i = 0; i < items.length; i++) {
-          const cell = shortOrderDates[i];
-          cell.textContent = items[i].orderDate.split('T')[0]
-        };
-      } else if (!shortenDates && longOrderDates.length > 0) {
-        for (let i = 0; i < items.length; i++) {
-          const cell = longOrderDates[i];
-          cell.textContent = `${items[i].orderDate.split('T')[0]} at ${items[i].orderDate.split('T')[1].substring(0, 5)}`;
-        };
-      }
+  // Display long or short versions of the date based on browser width.
+  const shortOrderDates = document.getElementsByClassName('order-dates true');
+  const longOrderDates = document.getElementsByClassName('order-dates false');
+
+  if (items.length > 0) {
+    if (shortenDates && shortOrderDates.length > 0) {
+      for (let i = 0; i < items.length; i++) {
+        const cell = shortOrderDates[i];
+        const orderDate = new Date(parseInt(items[i].OrderDate)).toISOString();
+        cell.textContent = orderDate.split('T')[0];
+      };
+    } else if (!shortenDates && longOrderDates.length > 0) {
+      for (let i = 0; i < items.length; i++) {
+        const cell = longOrderDates[i];
+        const orderDate = new Date(parseInt(items[i].OrderDate)).toISOString();
+        cell.textContent = `${orderDate.split('T')[0]} at ${orderDate.split('T')[1].substring(0, 5)}`;
+      };
     }
+  }
   
   useEffect(() => {
     setUnpushed(props.data);
   }, [props.data]);
 
   useEffect(() => {
-    if (isChecked.length === unpushed.length) setAllChecked(true);
-    else setAllChecked(false);
+    let mounted = true;
+    if (mounted) {
+      const unpushedData = unpushed['data'] && unpushed['data']['failedPushes'] ? unpushed['data']['failedPushes'] : '';
+      if (unpushedData && isChecked.length === unpushedData.length) setAllChecked(true);
+      else setAllChecked(false);
+    }
+    return () => mounted = false;
   }, [isChecked, unpushed]);
 
   useEffect(() => {
-    if (isChecked.length > 0) setActiveLink(true);
-    else setActiveLink(false);
+    let mounted = true;
+    if (mounted) {
+      const element = document.getElementById('retried-order-message');
+      if (isChecked.length > 0) {
+        const className = element ? element.getAttribute('class') : '';  
+        if (className && !className.includes('hidden')) element.setAttribute('class', `${className}-hidden`);
+        setActiveLink(true);
+      } else {
+        const className = element ? element.getAttribute('class').replace('-hidden', '') : ''; 
+        if (className) element.setAttribute('class', className);
+        setActiveLink(false);
+
+      }
+    }
+    return () => mounted = false;
   }, [isChecked]);
 
   useEffect(() => {
@@ -165,7 +199,7 @@ const UnPushed = props => {
     setChars(width < 768 ? 12 : width < 1023 ? 24 : width < 1280 ? 48 : 999);
     
     items.forEach(item => {
-      if (item.errorMessage) setNoLink(item.errorMessage.length < chars ? true : false);
+      if (item.ErrorMessage) setNoLink(item.ErrorMessage.length < chars ? true : false);
     })
 
     window.onresize = handleResize;
@@ -173,101 +207,111 @@ const UnPushed = props => {
 
   return props.error ? (
     <div>{props.error.message}</div>
-    ) : !props.isLoaded ? (
-      <div>Loading...</div>
-    ) : props.getPath === 'StagingOrders/Failed' ? (
+  ) : props.getQuery === 'failedPushes' ? (
     <>
-    <div className='order-info'>
-      <p className="order-info-number-display">Selected: {isChecked.length}</p>
-      <p className="order-info-number-display">Count: {props.data.length}</p>
-        {activeLink ? (
-        <div className='action-links'>
-          <form className='link'>
-            <Link
-                to={{
-                  pathname: '/failed-orders',
-                  state: {
-                    order: isChecked,
-                    postPath: 'StagingOrders',
-                    action: 'Repush',
-                    id: 'unpushed'
-                  },
-                }}
-                onClick={() => action('StagingOrders/Retry')}
-              >
-                Repush
-              </Link>
-              <Link
-                to={{
-                  pathname: '/failed-orders',
-                  state: {
-                    order: isChecked,
-                    postPath: 'StagingOrders',
-                    action: 'Ignore',
-                    id: 'unpushed'
-                  },
-                }}
-                onClick={() => action('StagingOrders/Ignore')}
-              >
-                Ignore
-              </Link>
-              <Link
-                to={{
-                  pathname: '/failed-orders',
-                  state: {
-                    order: isChecked,
-                    postPath: 'StagingOrders',
-                    action: 'Delete',
-                    id: 'unpushed'
-                  },
-                }}
-                onClick={() => action('StagingOrders/Failed', 'Delete')}
-              >
-                Delete
-              </Link>
-            </form>
-          </div>
-        ) : status !== 200 && response ? (
-          <div>Error: {error}</div>
+      <div className='order-info'>
+        <p className="order-info-number-display">Selected: {isChecked.length}</p>
+        <p className="order-info-number-display">Count: {items.length}</p>
+          {activeLink ? (
+            <div className='action-links'>
+              <form className='link'>
+                <Link
+                    to={{
+                      pathname: '/failed-orders',
+                      state: {
+                        order: isChecked,
+                        postPath: 'failedPushes',
+                        action: 'Repush',
+                        id: 'unpushed'
+                      },
+                    }}
+                    onClick={() => action('failedPushOrderById')}
+                  >
+                    Repush
+                  </Link>
+                  <Link
+                    to={{
+                      pathname: '/failed-orders',
+                      state: {
+                        order: isChecked,
+                        postPath: 'StagingOrders',
+                        action: 'Ignore',
+                        id: 'unpushed'
+                      },
+                    }}
+                    onClick={() => action('StagingOrders/Ignore')}
+                  >
+                    Ignore
+                  </Link>
+                  <Link
+                    to={{
+                      pathname: '/failed-orders',
+                      state: {
+                        order: isChecked,
+                        postPath: 'StagingOrders',
+                        action: 'Delete',
+                        id: 'unpushed'
+                      },
+                    }}
+                    onClick={() => action('StagingOrders/Failed', 'Delete')}
+                  >
+                    Delete
+                  </Link>
+              </form>
+            </div>
+          ) : status !== 200 && response ? (
+            <div>Error: {error}</div>
+          ) : (
+            ''
+          )}
+        {props.callerId === 'unpushed' ? (
+          !error ? (
+            props.order ? (
+              props.action && !activeLink && (props.action === 'Repush' || props.action === 'Ignore' || props.action === 'Delete') ? (
+                typeof props.order === 'number' || props.order.length === 1 ? (
+                  <div className="retried-order-set" id="retried-order-message">
+                    Order {props.order} has been {message(props.action)}.
+                  </div>
+                ) : (
+                  <div className="retried-order-set" id="retried-order-message">
+                    <p>The following orders have been {message(props.action)}:</p>
+                    <div className='orders-in-array'>
+                      {props.order.map((id, key) => (
+                        <p key={key}>{id}</p>))}
+                    </div>
+                  </div>
+                )
+              ) : (
+                ''
+              )
+            ) : (
+              ''
+            )
+          ) : (
+            props.order ? (
+              typeof props.order === 'number' || props.order.length === 1 ? (
+                <div className="retried-order-set" id="retried-order-message">
+                  The following error occurred when order {props.order} was {message(props.action)}: {error}.
+                </div>
+              ) : (
+                  <div className="retried-order-set" id="retried-order-message">
+                  <p>There was a "{error}" error when the following orders were {message(props.action)}:</p>
+                  <div className='orders-in-array'>
+                    {props.order.map((id, key) => (
+                      <p key={key}>{id}</p>))}
+                  </div>
+                </div>
+              )
+            ) : (
+              ''
+            )
+          )
         ) : (
           ''
         )}
-      {!error ? (
-        props.order && props.action && !activeLink && (props.action === 'Repush' || props.action === 'Ignore' || props.action === 'Delete') ? (
-          typeof props.order === 'number' || props.order.length === 1 ? (
-            <div className="retried-order-set">
-              Order {props.order} has been {message(props.action)}.
-            </div>
-            ) : (
-            <div className="retried-order-set">
-              <p>The following orders have been {message(props.action)}:</p>
-              <div className='orders-in-array'>
-                {props.order.map((id, key) => (
-                  <p key={key}>{id}</p>))}
-              </div>
-            </div>
-            )
-          ) : (
-          ''
-          ) 
-        ) : (
-        typeof props.order === 'number' || props.order.length === 1 ? (
-          <div className="retried-order-set">
-            The following error occurred when order {props.order} was {message(props.action)}: {error}.
-          </div>
-          ) : (
-            <div className="retried-order-set">
-            <p>The was a "{error}" when the following orders were {message(props.action)}:</p>
-            <div className='orders-in-array'>
-              {props.order.map((id, key) => (
-                <p key={key}>{id}</p>))}
-            </div>
-          </div>
-          )
-      )}
       </div>
-      
-      <table className="unpushed-table-large">
+        
+      <table className="unpushed-table-large" id="tab">
         <thead>
           <tr className='header-row'>
             {props.data.length !== 0 ? (
@@ -283,56 +327,56 @@ const UnPushed = props => {
               <th className='hidden-checkbox'></th>
             )}
             <th 
-              onClick={() => requestSort('orderNumber')}
-              className={getClassNamesFor('orderNumber')}
+              onClick={() => requestSort('OrderNumber')}
+              className={getClassNamesFor('OrderNumber')}
             >
               ID
             </th>
             <th
-              onClick={() => requestSort('market')}
-              className={getClassNamesFor('market')}
+              onClick={() => requestSort('Market')}
+              className={getClassNamesFor('Market')}
             >
               Market
             </th>
             <th
-              onClick={() => requestSort('warehouse')}
-              className={getClassNamesFor('warehouse')}
+              onClick={() => requestSort('Warehouse')}
+              className={getClassNamesFor('Warehouse')}
             >
               Warehouse
             </th>
             <th
-              onClick={() => requestSort('orderTotalAmount')}
-              className={getClassNamesFor('orderTotalAmount')}
+              onClick={() => requestSort('OrderTotalAmount')}
+              className={getClassNamesFor('OrderTotalAmount')}
             >
               Total
             </th>
             <th
-              onClick={() => requestSort('customerNumber')}
-              className={getClassNamesFor('customerNumber')}
+              onClick={() => requestSort('CustomerNumber')}
+              className={getClassNamesFor('CustomerNumber')}
             >
               Customer
             </th>
             <th
-              onClick={() => requestSort('orderDate')}
-              className={getClassNamesFor('orderDate')}
+              onClick={() => requestSort('OrderDate')}
+              className={getClassNamesFor('OrderDate')}
             >
               Date
             </th>
             <th
-              onClick={() => requestSort('stagingImportDate')}
-              className={getClassNamesFor('stagingImportDate')}
+              onClick={() => requestSort('StagingImportDate')}
+              className={getClassNamesFor('StagingImportDate')}
             >
               Staged
             </th>
             <th
-              onClick={() => requestSort('errorCode')}
-              className={getClassNamesFor('errorCode')}
+              onClick={() => requestSort('ErrorCode')}
+              className={getClassNamesFor('ErrorCode')}
             >
-             Error
+              Error
             </th>
             <th
-              onClick={() => requestSort('errorMessage')}
-              className={getClassNamesFor('errorMessage')}
+              onClick={() => requestSort('ErrorMessage')}
+              className={getClassNamesFor('ErrorMessage')}
             >
               Message
             </th>
@@ -345,42 +389,42 @@ const UnPushed = props => {
                 <td className='select-one'>
                   <Checkbox
                     type='checkbox'
-                    name={item.orderNumber}
-                    value={item.orderNumber}
+                    name={item.OrderNumber}
+                    value={item.OrderNumber}
                     handleClick={handleSelect}
-                    isChecked={isChecked.includes(item.orderNumber)}
+                    isChecked={isChecked.includes(item.OrderNumber)}
                   />
                 </td>
                 <td>
                   <Link
                     to={{
                       pathname: '/order-view',
-                      state: { order: item.orderNumber, path: 'StagingOrders' },
+                      state: { order: item.OrderNumber, path: 'StagingOrders' },
                     }}
                   >
-                    {item.orderNumber}{' '}
+                    {item.OrderNumber}{' '}
                   </Link>
                 </td>
-                <td className="reduceable-td">{item.market}</td>
-                <td>{item.warehouse}</td>
+                <td className="reduceable-td">{item.Market}</td>
+                <td>{item.Warehouse}</td>
                 <td>
-                  {item.market === 'CAN'
-                    ? formatCurrency(item.orderTotalAmount, 'CAD')
-                    : item.market === 'PHL'
-                    ? formatCurrency(item.orderTotalAmount, 'PHP')
-                    : formatCurrency(item.orderTotalAmount)}
+                  {item.Market === 'CAN'
+                    ? formatCurrency(item.OrderTotalAmount, 'CAD')
+                    : item.Market === 'PHL'
+                    ? formatCurrency(item.OrderTotalAmount, 'PHP')
+                    : formatCurrency(item.OrderTotalAmount)}
                 </td>
-                <td className="reduceable-td">{item.customerNumber}</td>
-                <td>{item.orderDate.split('T')[0]}</td>
+                <td className="reduceable-td">{item.CustomerNumber}</td>
+                <td>{new Date(parseInt(item.OrderDate)).toISOString().split('T')[0]}</td>
                 <td className={`order-dates ${shortenDates}`}>
-                  {item.stagingImportDate.split('T')[0]} at{' '}
-                  {item.stagingImportDate.split('T')[1].substring(0, 5)}
+                  {new Date(parseInt(item.StagingImportDate)).toISOString().split('T')[0]} at{' '}
+                  {new Date(parseInt(item.StagingImportDate)).toISOString().split('T')[1].substring(0, 5)}
                 </td>
-                <td>{item.errorCode ? item.errorCode : 'None'}</td>
+                <td>{item.ErrorCode ? item.ErrorCode : 'None'}</td>
                 <td className="unpushed-error-message">
-                  <span className={`error-message-button ${noLink}`} title={item.errorMessage.length > chars ? "Click to view the error." : ''} onClick={item.errorMessage.length > chars ? showError : null} name={item.orderNumber}>
-                    {item.errorMessage.includes('\r\n') ? `${item.errorMessage.split('\r\n').join(' ').slice(0, chars)}` : `${item.errorMessage.slice(0, chars)}`}
-                    {item.errorMessage.length > chars ? ' (...)' : ''}
+                  <span className={`error-message-button ${noLink}`} title={item.ErrorMessage.length > chars ? "Click to view the error." : ''} onClick={item.ErrorMessage.length > chars ? showError : null} name={item.OrderNumber}>
+                    {item.ErrorMessage.includes('\r\n') ? `${item.ErrorMessage.split('\r\n').join(' ').slice(0, chars)}` : `${item.ErrorMessage.slice(0, chars)}`}
+                    {item.ErrorMessage.length > chars ? ' (...)' : ''}
 
                   </span>
                 </td>
@@ -418,9 +462,9 @@ const UnPushed = props => {
         <tbody >
           {items.map((item, key) => (
             <tr key={key}>
-              <td name={item.orderNumber} id={item.orderNumber} className='error-message-unpushed'>
+              <td name={item.OrderNumber} id={item.OrderNumber} className='error-message-unpushed'>
                 <span onClick={closeError} className="x-close">X</span>
-                {item.errorMessage.includes('\r\n') ? `${item.errorMessage.split('\r\n').join(' ')}` : item.errorMessage}
+                {item.ErrorMessage.includes('\r\n') ? `${item.ErrorMessage.split('\r\n').join(' ')}` : item.ErrorMessage}
               </td>
             </tr>
               )

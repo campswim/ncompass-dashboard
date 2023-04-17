@@ -1,16 +1,20 @@
 import { useState, useMemo } from 'react';
 
 const useSort = (items, caller) => {
+
+  console.log({caller});
+
   if (!items) items = [];
   if (items['data'] && items['data']['failedPulls']) items = items.data.failedPulls;
+  if (items['data'] && items['data']['failedPushes']) items = items.data.failedPushes;
 
   const [sortConfig, setSortConfig] = useState({
-    key: caller === 'params' ? 'enabledDate' : caller === 'map' ? 'id' : caller === 'unpulled' || caller === 'unpushed' ? 'orderNumber' : caller === 'order-details' ? 'lineNumber' : null,
+    key: caller === 'params' ? 'EnabledDate' : caller === 'map' ? 'Id' : caller === 'unpulled' || caller === 'unpushed' ? 'OrderNumber' : caller === 'order-details' ? 'lineNumber' : null,
     direction: 'ascending',
   });
 
   const sortedData = useMemo(() => {
-    let sortedItems = [...items];
+    let sortedItems = items && items.length > 0 ? [...items] : [];
     sortedItems.sort((a, b) => {
       let elementOne = a[sortConfig.key];
       let elementTwo = b[sortConfig.key];

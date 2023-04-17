@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
 import ApiCall from './api-call';
 
-const Settings = props => {
-  const [path, setPath] = useState('config/maps');
-
+const Settings = () => {  
+  const [path, setPath] = useState('maps');
   const handleSubmit = event => event.preventDefault();
 
   // Click handler: which tab to show, maps or params.
@@ -15,28 +14,26 @@ const Settings = props => {
     if (chosenButton) {
       activeButton = document.getElementById(chosenButton);
       activeButton.setAttribute('class', 'active-button');
-      if (chosenButton === 'map') 
+      if (chosenButton === 'maps') 
         inactiveButton = document.getElementById('params');
-      else inactiveButton = document.getElementById('map');
+      else inactiveButton = document.getElementById('maps');
       inactiveButton.setAttribute('class', 'inactive-button');
     }
   };
 
   return (
     <>
-    <div className='order-actions'>
-      <form onSubmit={handleSubmit}>
-        <button className='active-button' id='map' value='config/maps' onClick={handleClick}>
-          Warehouse Map
-        </button>
-      </form>
-      <form onSubmit={handleSubmit}>
-        <button id='params' value='config/params' onClick={handleClick}>
-          Parameters
-        </button>
-      </form>
-    </div>
-    <ApiCall path={path} />
+      <div className='order-actions'>
+        <form onSubmit={handleSubmit}>
+          <button className='active-button' id='maps' value='maps' onClick={handleClick}>
+            Warehouse Map
+          </button>
+          <button id='params' value='params' onClick={handleClick}>
+            Parameters
+          </button>
+        </form>
+      </div>
+      <ApiCall path={path} />
     </>
   );
 };

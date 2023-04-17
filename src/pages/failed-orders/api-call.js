@@ -14,28 +14,27 @@ const Api = props => {
     setQuery(query);
   };
 
-  useEffect(() => {   
+  useEffect(() => {
     let mounted = true;
-    let queryString = `query ${query}`;
-    queryString = 'failedPushes' === query ? queryString + `{${query} {OrderNumber Market Warehouse OrderTotalAmount CustomerNumber OrderDate StagingImportDate, ErrorCode, ErrorMessage}}` : queryString + `{${query} {id, orderNumber, orderDate, orderTotal, currencyCode, message, at, ignoredAt, exception}}`;
+    if (mounted) {
+      let queryString = `query ${props.getQuery} {${props.getQuery} `;
+      queryString += 'failedPushes' === props.getQuery ? `{OrderNumber Market Warehouse OrderTotalAmount CustomerNumber OrderDate StagingImportDate, ErrorCode, ErrorMessage}}` : `{Id, OrderNumber, OrderDate, OrderTotal, CurrencyCode, Message, At, IgnoredAt, Exception}}`;
+      
+      const graphQlQuery = {
+        operation: props.getQuery,
+        query: queryString,
+        variables: {}
+      };
     
-    const graphQlQuery = {
-      operation: query,
-      query: queryString ,
-      variables: {}
-    };
+      const options = {
+        method: 'POST',
+        url: process.env.REACT_APP_API,
+        data: JSON.stringify(graphQlQuery),
+        headers: {'Content-Type': 'application/json'}
+      };
   
-    const options = {
-      method: 'POST',
-      url: process.env.REACT_APP_API,
-      data: JSON.stringify(graphQlQuery),
-      headers: {'Content-Type': 'application/json'}
-    };
-
-    axios.request(options).then(
-      res => {
-        console.log({res});
-        if (mounted) {
+      axios.request(options).then(
+        res => {
           if (props.getQuery === 'failedPushes') {
             setUnpushed(res.data);
             setIsLoaded(true);
@@ -45,17 +44,17 @@ const Api = props => {
             setIsLoaded(true);
             setError(null);
           }
+        },
+        err => {
+          console.log({err});
+          if (mounted) {
+            setError(err);
+            setIsLoaded(true);
+          }
         }
-      },
-      err => {
-        console.log({err});
-        if (mounted) {
-          setError(err);
-          setIsLoaded(true);
-        }
-      }
-    );
-    // setQuery(null);
+      );
+      // setQuery(null);
+    }
 
     return () => (mounted = false);
   }, [props.getQuery, query]);
@@ -63,8 +62,9 @@ const Api = props => {
   useEffect(() => {
     if (props.callerId === 'order-details' && props.getQuery !== 'failedPushes') 
       setQuery('failedPushes');
+    else setQuery('failedPulls');
   }, [props.callerId, props.getQuery]);
-
+  
   return (
     <>
       <Unpulled
@@ -76,6 +76,7 @@ const Api = props => {
         recall={recallApi}
         order={props.order}
         action={props.action}
+        callerId={props.callerId}
       />
       <Unpushed
         data={unpushed}
@@ -86,6 +87,7 @@ const Api = props => {
         recall={recallApi}
         order={props.order}
         action={props.action}
+        callerId={props.callerId}
       />
     </>
   );

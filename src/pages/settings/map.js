@@ -2,100 +2,92 @@ import React from 'react';
 import useSort from '../../hooks/sort-data';
 
 const Map = props => {
-  // Call the sorting hook and set class to "ascending" or "descending."
-  const { items, requestSort, sortConfig } = useSort(props.mapData, 'map');
+  // Call the sorting hook and set class to "ascending" or "descending."  
+  const { items, requestSort, sortConfig } = useSort(props.mapData.maps, 'map');
   const getClassNamesFor = name => {
-    if (!sortConfig) {
-      return;
-    }
+    if (!sortConfig) return;
     return sortConfig.key === name ? sortConfig.direction : undefined;
   };
-
+  
   return props.error ? (
     <div>{props.error.message}</div>
   ) : !props.isLoaded ? (
     <div>Loading...</div>
-  ) : props.path === 'config/maps' ? (
+  ) : props.path === 'maps' ? (
     <>
       <div className="map-table-large">
         <table className="map-table">
           <thead>
             <tr className='header-row'>
               <th
-                onClick={() => requestSort('id')}
-                className={`map-id ${getClassNamesFor('id')}`}
+                onClick={() => requestSort('Id')}
+                className={`map-id ${getClassNamesFor('Id')}`}
               >
                 ID
               </th>
               <th
-                onClick={() => requestSort('isoCountryCode')}
-                className={getClassNamesFor('isoCountryCode')}
+                onClick={() => requestSort('IsoCountryCode')}
+                className={getClassNamesFor('IsoCountryCode')}
               >
                   Country
               </th>
               <th
-                onClick={() => requestSort('gpCompanyId')}
-                className={getClassNamesFor('gpCompanyId')}
+                onClick={() => requestSort('ErpCompanyId')}
+                className={getClassNamesFor('ErpCompanyId')}
               >
-                  Company
+                  ERP Company ID
               </th>
               <th
-                onClick={() => requestSort('sourceWarehouse')}
-                className={getClassNamesFor('sourceWarehouse')}
+                onClick={() => requestSort('SourceWarehouse')}
+                className={getClassNamesFor('SourceWarehouse')}
               >
                 CRM Warehouse
               </th>
               <th
-                onClick={() => requestSort('sourceShipMethod')}
-                className={getClassNamesFor('sourceShipMethod')}
+                onClick={() => requestSort('SourceShipMethod')}
+                className={getClassNamesFor('SourceShipMethod')}
               >
                 CRM Shipment Method
               </th>
               <th
-                onClick={() => requestSort('gpWarehouse')}
-                className={getClassNamesFor('gpWarehouse')}
+                onClick={() => requestSort('DestinationWarehouse')}
+                className={getClassNamesFor('DestinationWarehouse')}
               >
-                GP Warehouse
+                ERP Warehouse
               </th>
-              <th
-                onClick={() => requestSort('rm00201Classid')}
-                className={getClassNamesFor('rm00201Classid')}
-              >
-                Class
-              </th>
-              <th
+              {/* <th
                 onClick={() => requestSort('id')}
                 className={`map-id ${getClassNamesFor('id')}`}
               >
                 ID
-              </th>
+              </th> */}
               <th
-                  onClick={() => requestSort('isoCurrencyCode')}
-                  className={getClassNamesFor('isoCurrencyCode')}
+                  onClick={() => requestSort('IsoCurrencyCode')}
+                  className={getClassNamesFor('IsoCurrencyCode')}
                 >
                   Currency
               </th>
               <th
-                onClick={() => requestSort('gpCurrencyCode')}
-                className={getClassNamesFor('gpCurrencyCode')}
+                onClick={() => requestSort('ErpCurrencyCode')}
+                className={getClassNamesFor('ErpCurrencyCode')}
               >
-                GP Currency
+                ERP Currency
               </th>
               <th
-                onClick={() => requestSort('processingSequence')}
-                className={getClassNamesFor('processingSequence')}
+                onClick={() => requestSort('ProcessingSequence')}
+                className={getClassNamesFor('ProcessingSequence')}
               >
                 Sequence
               </th>
               <th
-                onClick={() => requestSort('activatedAt')}
-                className={getClassNamesFor('activatedAt')}
+                onClick={() => requestSort('ActivatedAt')}
+                className={getClassNamesFor('ActivatedAt')}
               >
                 Activated
               </th>
               <th
-                onClick={() => requestSort('deactivatedAt')}
-                className={getClassNamesFor('deactivatedAt')}
+                onClick={() => requestSort('DeactivatedAt')}
+                className={getClassNamesFor('DeactivatedAt')}
               >
                 Deactivated
               </th>
@@ -104,21 +96,20 @@ const Map = props => {
           <tbody>
             {items.map((item, key) => (
               <tr key={key}>
-                <td className="map-id">{item.id}</td>
-                <td>{item.isoCountryCode}</td>
-                <td>{item.gpCompanyId}</td>
-                <td>{item.sourceWarehouse}</td>
-                <td>{item.sourceShipMethod}</td>
-                <td>{item.gpWarehouse}</td>
-                <td>{item.rm00201Classid}</td>
-                <td>{item.isoCurrencyCode}</td>
-                <td>{item.gpCurrencyCode}</td>
-                <td>{item.processingSequence}</td>
+                <td className="map-id">{item.Id}</td>
+                <td>{item.IsoCountryCode}</td>
+                <td>{item.ErpCompanyId}</td>
+                <td>{item.SourceWarehouse}</td>
+                <td>{item.SourceShipMethod}</td>
+                <td>{item.DestinationWarehouse}</td>
+                <td>{item.IsoCurrencyCode}</td>
+                <td>{item.ErpCurrencyCode}</td>
+                <td>{item.ProcessingSequence}</td>
                 <td>
-                  {item.activatedAt ? item.activatedAt.split('T')[0] : 'None'}
+                  {item.ActivatedAt ? new Date(parseInt(item.ActivatedAt)).toISOString().split('T')[0] : 'None'}
                 </td>
                 <td>
-                  {item.deactivatedAt ? item.deactivatedAt.split('T')[0] : 'None'}
+                  {item.DeactivatedAt ? new Date(parseInt(item.DeactivatedAt)).toISOString().split('T')[0] : 'None'}
                 </td>
               </tr>
             ))}
@@ -131,46 +122,40 @@ const Map = props => {
           <thead>
             <tr className='header-row'>
               <th
-                onClick={() => requestSort('id')}
-                className={`map-id ${getClassNamesFor('id')}`}
+                onClick={() => requestSort('Id')}
+                className={`map-id ${getClassNamesFor('Id')}`}
               >
                 ID
               </th>
               <th
-                onClick={() => requestSort('isoCountryCode')}
-                className={getClassNamesFor('isoCountryCode')}
+                onClick={() => requestSort('IsoCountryCode')}
+                className={getClassNamesFor('IsoCountryCode')}
               >
                   Country
               </th>
               <th
-                onClick={() => requestSort('gpCompanyId')}
-                className={getClassNamesFor('gpCompanyId')}
+                onClick={() => requestSort('ErpCompanyId')}
+                className={getClassNamesFor('ErpCompanyId')}
               >
                   Company
               </th>
               <th
-                onClick={() => requestSort('sourceWarehouse')}
-                className={getClassNamesFor('sourceWarehouse')}
+                onClick={() => requestSort('SourceWarehouse')}
+                className={getClassNamesFor('SourceWarehouse')}
               >
                 CRM Warehouse
               </th>
               <th
-                onClick={() => requestSort('sourceShipMethod')}
-                className={getClassNamesFor('sourceShipMethod')}
+                onClick={() => requestSort('SourceShipMethod')}
+                className={getClassNamesFor('SourceShipMethod')}
               >
                 CRM Shipment Method
               </th>
               <th
-                onClick={() => requestSort('gpWarehouse')}
-                className={getClassNamesFor('gpWarehouse')}
+                onClick={() => requestSort('DestinationWarehouse')}
+                className={getClassNamesFor('DestinationWarehouse')}
               >
-                GP Warehouse
-              </th>
-              <th
-                onClick={() => requestSort('rm00201Classid')}
-                className={getClassNamesFor('rm00201Classid')}
-              >
-                Class
+                ERP Warehouse
               </th>
             </tr>
           </thead>
@@ -178,12 +163,11 @@ const Map = props => {
             {items.map((item, key) => (
               <tr key={key}>
                 <td className="map-id">{item.id}</td>
-                <td>{item.isoCountryCode}</td>
-                <td>{item.gpCompanyId}</td>
-                <td>{item.sourceWarehouse}</td>
-                <td>{item.sourceShipMethod}</td>
-                <td>{item.gpWarehouse}</td>
-                <td>{item.rm00201Classid}</td>
+                <td>{item.IsoCountryCode}</td>
+                <td>{item.ErpCompanyId}</td>
+                <td>{item.SourceWarehouse}</td>
+                <td>{item.SourceShipMethod}</td>
+                <td>{item.DestinationWarehouse}</td>
               </tr>
             ))}
           </tbody>
@@ -193,38 +177,38 @@ const Map = props => {
         <thead>
           <tr className='header-row'>
             <th
-              onClick={() => requestSort('id')}
-              className={`map-id ${getClassNamesFor('id')}`}
+              onClick={() => requestSort('Id')}
+              className={`map-id ${getClassNamesFor('Id')}`}
             >
               ID
             </th>
             <th
-                onClick={() => requestSort('isoCurrencyCode')}
-                className={getClassNamesFor('isoCurrencyCode')}
+                onClick={() => requestSort('IsoCurrencyCode')}
+                className={getClassNamesFor('IsoCurrencyCode')}
               >
                 Currency
             </th>
             <th
-              onClick={() => requestSort('gpCurrencyCode')}
-              className={getClassNamesFor('gpCurrencyCode')}
+              onClick={() => requestSort('ErpCurrencyCode')}
+              className={getClassNamesFor('ErpCurrencyCode')}
             >
-              GP Currency
+              ERP Currency
             </th>
             <th
-              onClick={() => requestSort('processingSequence')}
-              className={getClassNamesFor('processingSequence')}
+              onClick={() => requestSort('ProcessingSequence')}
+              className={getClassNamesFor('ProcessingSequence')}
             >
               Sequence
             </th>
             <th
-              onClick={() => requestSort('activatedAt')}
-              className={getClassNamesFor('activatedAt')}
+              onClick={() => requestSort('ActivatedAt')}
+              className={getClassNamesFor('ActivatedAt')}
             >
               Activated
             </th>
             <th
-              onClick={() => requestSort('deactivatedAt')}
-              className={getClassNamesFor('deactivatedAt')}
+              onClick={() => requestSort('DeactivatedAt')}
+              className={getClassNamesFor('DeactivatedAt')}
             >
               Deactivated
             </th>
@@ -234,15 +218,15 @@ const Map = props => {
           {items.map((item, key) => (
             <tr key={key}>
               <td className="map-id">{item.id}</td>
-              <td>{item.isoCurrencyCode}</td>
-              <td>{item.gpCurrencyCode}</td>
-              <td>{item.processingSequence}</td>
+              <td>{item.IsoCurrencyCode}</td>
+              <td>{item.ErpCurrencyCode}</td>
+              <td>{item.ProcessingSequence}</td>
               <td>
-                {item.activatedAt ? item.activatedAt.split('T')[0] : 'None'}
-              </td>
-              <td>
-                {item.deactivatedAt ? item.deactivatedAt.split('T')[0] : 'None'}
-              </td>
+                  {item.ActivatedAt ? new Date(parseInt(item.ActivatedAt)).toISOString().split('T')[0] : 'None'}
+                </td>
+                <td>
+                  {item.DeactivatedAt ? new Date(parseInt(item.DeactivatedAt)).toISOString().split('T')[0] : 'None'}
+                </td>
             </tr>
           ))}
         </tbody>
@@ -254,26 +238,26 @@ const Map = props => {
         <thead>
           <tr className='header-row'>
             <th
-              onClick={() => requestSort('id')}
-              className={`map-id ${getClassNamesFor('id')}`}
+              onClick={() => requestSort('Id')}
+              className={`map-id ${getClassNamesFor('Id')}`}
             >
               ID
             </th>
             <th
-              onClick={() => requestSort('isoCountryCode')}
-              className={getClassNamesFor('isoCountryCode')}
+              onClick={() => requestSort('IsoCountryCode')}
+              className={getClassNamesFor('IsoCountryCode')}
             >
                 Country
             </th>
             <th
-              onClick={() => requestSort('gpCompanyId')}
-              className={getClassNamesFor('gpCompanyId')}
+              onClick={() => requestSort('ErpCompanyId')}
+              className={getClassNamesFor('ErpCompanyId')}
             >
                 Company
             </th>
             <th
-              onClick={() => requestSort('sourceWarehouse')}
-              className={getClassNamesFor('sourceWarehouse')}
+              onClick={() => requestSort('SourceWarehouse')}
+              className={getClassNamesFor('SourceWarehouse')}
             >
               CRM Warehouse
             </th>
@@ -282,10 +266,10 @@ const Map = props => {
         <tbody>
           {items.map((item, key) => (
             <tr key={key}>
-              <td className="map-id">{item.id}</td>
-              <td>{item.isoCountryCode}</td>
-              <td>{item.gpCompanyId}</td>
-              <td>{item.sourceWarehouse}</td>
+              <td className="map-id">{item.Id}</td>
+              <td>{item.IsoCountryCode}</td>
+              <td>{item.ErpCompanyId}</td>
+              <td>{item.SourceWarehouse}</td>
             </tr>
           ))}
         </tbody>
@@ -295,28 +279,22 @@ const Map = props => {
         <thead>
           <tr className='header-row'>
             <th
-              onClick={() => requestSort('id')}
-              className={`map-id ${getClassNamesFor('id')}`}
+              onClick={() => requestSort('Id')}
+              className={`map-id ${getClassNamesFor('Id')}`}
             >
               ID
             </th>
             <th
-              onClick={() => requestSort('sourceShipMethod')}
-              className={getClassNamesFor('sourceShipMethod')}
+              onClick={() => requestSort('SourceShipMethod')}
+              className={getClassNamesFor('SourceShipMethod')}
             >
               CRM Shipment Method
             </th>
             <th
-              onClick={() => requestSort('gpWarehouse')}
-              className={getClassNamesFor('gpWarehouse')}
+              onClick={() => requestSort('ErpWarehouse')}
+              className={getClassNamesFor('ErpWarehouse')}
             >
-              GP Warehouse
-            </th>
-            <th
-              onClick={() => requestSort('rm00201Classid')}
-              className={getClassNamesFor('rm00201Classid')}
-            >
-              Class
+              ERP Warehouse
             </th>
           </tr>
         </thead>
@@ -324,9 +302,8 @@ const Map = props => {
           {items.map((item, key) => (
             <tr key={key}>
               <td className="map-id">{item.id}</td>
-              <td>{item.sourceShipMethod}</td>
-              <td>{item.gpWarehouse}</td>
-              <td>{item.rm00201Classid}</td>
+              <td>{item.SourceShipMethod}</td>
+              <td>{item.ErpWarehouse}</td>
             </tr>
           ))}
         </tbody>
@@ -336,26 +313,26 @@ const Map = props => {
         <thead>
           <tr className='header-row'>
             <th
-              onClick={() => requestSort('id')}
-              className={`map-id ${getClassNamesFor('id')}`}
+              onClick={() => requestSort('Id')}
+              className={`map-id ${getClassNamesFor('Id')}`}
             >
               ID
             </th>
             <th
-                onClick={() => requestSort('isoCurrencyCode')}
-                className={getClassNamesFor('isoCurrencyCode')}
+                onClick={() => requestSort('IsoCurrencyCode')}
+                className={getClassNamesFor('IsoCurrencyCode')}
               >
                 Currency
             </th>
             <th
-              onClick={() => requestSort('gpCurrencyCode')}
-              className={getClassNamesFor('gpCurrencyCode')}
+              onClick={() => requestSort('ErpCurrencyCode')}
+              className={getClassNamesFor('ErpCurrencyCode')}
             >
-              GP Currency
+              ERP Currency
             </th>
             <th
-              onClick={() => requestSort('processingSequence')}
-              className={getClassNamesFor('processingSequence')}
+              onClick={() => requestSort('ProcessingSequence')}
+              className={getClassNamesFor('ProcessingSequence')}
             >
               Sequence
             </th>
@@ -365,9 +342,9 @@ const Map = props => {
           {items.map((item, key) => (
             <tr key={key}>
               <td className="map-id">{item.id}</td>
-              <td>{item.isoCurrencyCode}</td>
-              <td>{item.gpCurrencyCode}</td>
-              <td>{item.processingSequence}</td>
+              <td>{item.IsoCurrencyCode}</td>
+              <td>{item.ErpCurrencyCode}</td>
+              <td>{item.ProcessingSequence}</td>
             </tr>
           ))}
         </tbody>
@@ -377,20 +354,20 @@ const Map = props => {
         <thead>
           <tr className='header-row'>
             <th
-              onClick={() => requestSort('id')}
-              className={`map-id ${getClassNamesFor('id')}`}
+              onClick={() => requestSort('Id')}
+              className={`map-id ${getClassNamesFor('Id')}`}
             >
               ID
             </th>
             <th
-              onClick={() => requestSort('activatedAt')}
-              className={getClassNamesFor('activatedAt')}
+              onClick={() => requestSort('ActivatedAt')}
+              className={getClassNamesFor('ActivatedAt')}
             >
               Activated
             </th>
             <th
-              onClick={() => requestSort('deactivatedAt')}
-              className={getClassNamesFor('deactivatedAt')}
+              onClick={() => requestSort('DeactivatedAt')}
+              className={getClassNamesFor('DeactivatedAt')}
             >
               Deactivated
             </th>
@@ -401,11 +378,11 @@ const Map = props => {
             <tr key={key}>
               <td className="map-id">{item.id}</td>
               <td>
-                {item.activatedAt ? item.activatedAt.split('T')[0] : 'None'}
-              </td>
-              <td>
-                {item.deactivatedAt ? item.deactivatedAt.split('T')[0] : 'None'}
-              </td>
+                  {item.ActivatedAt ? new Date(parseInt(item.ActivatedAt)).toISOString().split('T')[0] : 'None'}
+                </td>
+                <td>
+                  {item.DeactivatedAt ? new Date(parseInt(item.DeactivatedAt)).toISOString().split('T')[0] : 'None'}
+                </td>
             </tr>
           ))}
         </tbody>

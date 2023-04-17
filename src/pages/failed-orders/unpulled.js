@@ -31,17 +31,33 @@ const UnPulled = props => {
 
   // Call the api to return the details of the selected order (on the order-view page).
   const apiCall = (path, orders) => {
-    axios({
+    if ('CrmOrders/Ignore' === path || 'CrmOrders/RepullAllowMismatch' === path) {
+      setError('This action is currently disabled');
+      return;
+    }
+    const query = path;
+    let queryString = `query ${query}($ids: [String]!)`;
+    if ('failedPullOrderById' === query) queryString += `{${query}(ids: $ids) {Id, OrderNumber, OrderDate, OrderTotal, CurrencyCode, Message, At, IgnoredAt, Exception}}`;
+    const graphQlQuery = {
+      operation: query,
+      query: queryString ,
+      variables: {ids: orders}
+    };
+    const options = {
       method: 'POST',
-      baseURL: process.env.REACT_APP_API,
-      url: path,
-      data: orders,
-    }).then(
+      url: process.env.REACT_APP_API,
+      data: JSON.stringify(graphQlQuery),
+      headers: {'Content-Type': 'application/json'}
+    };
+      
+    axios.request(options).then(
       res => {
         setResponse(res.data);
         setStatus(res.status);
+        setError(null);
       },
       err => {
+        console.log({err});
         setError(err.message);
       }
     );
@@ -53,14 +69,18 @@ const UnPulled = props => {
     else alert('Please tick an order.');
     setIsChecked([]);
     setAllChecked(false);
-    props.recall('CrmOrders/Failed');
+    props.recall('failedPulls');
+
+    // Store a flag in localStorage to indicate that a new action has been initiated.
+    sessionStorage.setItem('action', true);
   };
 
   // Handle the toggling of the select-all checkbox.
   const handleSelectAll = () => {
-    // Because the setting of state is asynchronous, this next line will not set allChecked to its opposite untl after setChecked runs, meaning that when allChecked === true, its a step behind, explaining why setChecked is emptied.
+    // Because the setting of state is asynchronous, this next line will not set allChecked to its opposite until after setChecked runs, meaning that when allChecked === true, it's a step behind, explaining why setChecked is emptied.
+    const unpulledData = unpulled['data'] && unpulled['data']['failedPulls'] ? unpulled['data']['failedPulls'] : '';
     setAllChecked(!allChecked);
-    setIsChecked(unpulled.map(item => item.orderNumber));
+    setIsChecked(unpulledData.map(item => item.OrderNumber));
     if (allChecked) setIsChecked([]);
   };
 
@@ -76,7 +96,7 @@ const UnPulled = props => {
     let pastTenseVerb = null;
     if (action) {
       if (action === 'Repull') pastTenseVerb = 'repulled';
-      if (action === 'RepullAllowMimatch')
+      if (action === 'RepullAllowMismatch')
         pastTenseVerb = 'repulled with mismatch';
       if (action === 'Ignore') pastTenseVerb = 'ignored';
       // if (action === 'Retry') pastTenseVerb = 'repulled';
@@ -103,23 +123,23 @@ const UnPulled = props => {
     if (shortenDates && shortOrderDates.length > 0 && shortAttemptedDates.length > 0) {
       for (let i = 0; i < items.length; i++) {
         const cell = shortOrderDates[i];
-        const orderDate = new Date(parseInt(items[i].orderDate)).toISOString();
+        const orderDate = new Date(parseInt(items[i].OrderDate)).toISOString();
         cell.textContent = orderDate.split('T')[0];
       };
       for (let i = 0; i < items.length; i++) {
         const cell = shortAttemptedDates[i];
-        const orderDate = new Date(parseInt(items[i].orderDate)).toISOString();
+        const orderDate = new Date(parseInt(items[i].OrderDate)).toISOString();
         cell.textContent = orderDate.split('T')[0];
       };
     } else if (!shortenDates && longOrderDates.length > 0 && longAttemptedDates.length > 0 ) {
       for (let i = 0; i < items.length; i++) {
         const cell = longOrderDates[i];
-        const orderDate = new Date(parseInt(items[i].orderDate)).toISOString();
+        const orderDate = new Date(parseInt(items[i].OrderDate)).toISOString();
         cell.textContent = `${orderDate.split('T')[0]} at ${orderDate.split('T')[1].substring(0, 5)}`;
       };
       for (let i = 0; i < items.length; i++) {
         const cell = longAttemptedDates[i];
-        const at = new Date(parseInt(items[i].at)).toISOString();
+        const at = new Date(parseInt(items[i].At)).toISOString();
         cell.textContent = items[i].at ? `${at.split('T')[0]} at ${at.split('T')[1].substring(0, 5)}` : 'None';
       };
     }
@@ -129,12 +149,13 @@ const UnPulled = props => {
     let mounted = true;
     if (mounted) setUnpulled(props.data);
     return () => mounted = false;
-  }, [props.data]);
+  }, [props]);
 
   useEffect(() => {
     let mounted = true;
     if (mounted) {
-      if (isChecked.length === unpulled.length) setAllChecked(true);
+      const unpulledData = unpulled['data'] && unpulled['data']['failedPulls'] ? unpulled['data']['failedPulls'] : '';
+      if (unpulledData && isChecked.length === unpulledData.length) setAllChecked(true);
       else setAllChecked(false);
     }
     return () => mounted = false;
@@ -143,8 +164,16 @@ const UnPulled = props => {
   useEffect(() => {
     let mounted = true;
     if (mounted) {
-      if (isChecked.length > 0) setActiveLink(true);
-      else setActiveLink(false);
+      const element = document.getElementById('retried-order-message');
+      if (isChecked.length > 0) {
+        const className = element ? element.getAttribute('class') : '';  
+        if (className && !className.includes('hidden')) element.setAttribute('class', `${className}-hidden`);
+        setActiveLink(true);
+      } else {
+        const className = element ? element.getAttribute('class').replace('-hidden', '') : ''; 
+        if (className) element.setAttribute('class', className);
+        setActiveLink(false);
+      }
     }
     return () => mounted = false;
   }, [isChecked]);
@@ -169,61 +198,61 @@ const UnPulled = props => {
     }
     return () => mounted = false;
   }, [width]);
-
+  
   return props.error ? (
     <div>{props.error.message}</div>
     ) : !props.isLoaded ? (
       <div>Loading...</div>
     ) : props.getQuery === 'failedPulls' ? (
     <>
-      <div className='order-info'>
+      <div className="order-info">
         <p className="order-info-number-display">Selected: {isChecked.length}</p>
-        <p className="order-info-number-display">Count: {props.data.length}</p>
+        <p className="order-info-number-display">Count: {items.length}</p>
         {activeLink ? (
-          <div className='action-links'>
-            <form className='link'>
-            <Link
-              to={{
-                pathname: '/failed-orders',
-                state: {
-                  order: isChecked,
-                  postPath: 'CrmOrders',
-                  action: 'Repull',
-                  id: 'unpulled'
-                },
-              }}
-              onClick={() => action('CrmOrders/Repull')}
-            >
-              Repull
-            </Link>
-            <Link
-              to={{
-                pathname: '/failed-orders',
-                state: {
-                  order: isChecked,
-                  postPath: 'CrmOrders',
-                  action: 'Ignore',
-                  id: 'unpulled'
-                },
-              }}
-              onClick={() => action('CrmOrders/Ignore')}
-            >
-              Ignore
-            </Link>
-            <Link
-              to={{
-                pathname: '/failed-orders',
-                state: {
-                  order: isChecked,
-                  postPath: 'CrmOrders',
-                  action: 'RepullAllowMismatch',
-                  id: 'unpulled'
-                },
-              }}
-              onClick={() => action('CrmOrders/RepullAllowMismatch')}
-            >
-              Repull w/ Mismatch
-            </Link>
+          <div className="action-links">
+            <form className="link">
+              <Link
+                to={{
+                  pathname: '/failed-orders',
+                  state: {
+                    order: isChecked,
+                    postPath: 'failedPulls',
+                    action: 'Repull',
+                    id: 'unpulled'
+                  },
+                }}
+                onClick={() => action('failedPullOrderById')}
+              >
+                Repull
+              </Link>
+              <Link
+                to={{
+                  pathname: '/failed-orders',
+                  state: {
+                    order: isChecked,
+                    postPath: 'CrmOrders',
+                    action: 'Ignore',
+                    id: 'unpulled'
+                  },
+                }}
+                onClick={() => action('CrmOrders/Ignore')}
+              >
+                Ignore
+              </Link>
+              <Link
+                to={{
+                  pathname: '/failed-orders',
+                  state: {
+                    order: isChecked,
+                    postPath: 'CrmOrders',
+                    action: 'RepullAllowMismatch',
+                    id: 'unpulled'
+                  },
+                }}
+                onClick={() => action('CrmOrders/RepullAllowMismatch')}
+              >
+                Repull w/ Mismatch
+              </Link>
             </form>
           </div>
         ) : status !== 200 && response ? (
@@ -231,15 +260,38 @@ const UnPulled = props => {
         ) : (
           ''
         )}
-        {!error ? (
-          props.order && props.action && !activeLink && (props.action === 'Repull' || props.action === 'Ignore' || props.action === 'Delete') ? (
-            typeof props.order === 'number' || props.order.length === 1 ? (
-              <div className="retried-order-set">
-                Order {props.order} has been {message(props.action)}.
+        {props.callerId === 'unpulled' ? (
+          !error ? (
+            props.order ? (
+              props.action && !activeLink && (props.action === 'Repull' || props.action === 'Ignore' || props.action === 'Delete') ? (
+                typeof props.order === 'number' || props.order.length === 1 ? (
+                  <div className="retried-order-set" id="retried-order-message">
+                    Order {props.order} has been {message(props.action)}.
+                  </div>
+                  ) : (
+                  <div className="retried-order-set" id="retried-order-message">
+                    <p>The following orders have been {message(props.action)}:</p>
+                    <div className='orders-in-array'>
+                      {props.order.map((id, key) => (
+                        <p key={key}>{id}</p>))}
+                    </div>
+                  </div>
+                  )
+                ) : (
+                ''
+                ) 
+            ) : (
+              ''
+            )
+          ) : (
+            props.order ? (
+              typeof props.order === 'number' || props.order.length === 1 ? (
+              <div className="retried-order-set" id="retried-order-message">
+                The following error occurred when order {props.order} was {message(props.action)}: {error}.
               </div>
               ) : (
-              <div className="retried-order-set">
-                <p>The following orders have been {message(props.action)}:</p>
+                <div className="retried-order-set" id="retried-order-message">
+                <p>There was a "{error}" error when the following orders were {message(props.action)}:</p>
                 <div className='orders-in-array'>
                   {props.order.map((id, key) => (
                     <p key={key}>{id}</p>))}
@@ -247,27 +299,15 @@ const UnPulled = props => {
               </div>
               )
             ) : (
-            ''
-            ) 
-          ) : (
-          typeof props.order === 'number' || props.order.length === 1 ? (
-            <div className="retried-order-set">
-              The following error occurred when order {props.order} was {message(props.action)}: {error}.
-            </div>
-            ) : (
-              <div className="retried-order-set">
-              <p>There was a "{error}" when the following orders were {message(props.action)}:</p>
-              <div className='orders-in-array'>
-                {props.order.map((id, key) => (
-                  <p key={key}>{id}</p>))}
-              </div>
-            </div>
+              ''
             )
           )
-        }
+        ) : (
+          ''
+        )}
       </div>
 
-      <table className="unpulled-table-large">
+      <table className="unpulled-table-large" id="tab">
         <thead>
           <tr className='header-row'>
           {props.data.length !== 0 ? (
@@ -283,32 +323,32 @@ const UnPulled = props => {
             <th className='hidden-checkbox'></th>
           )}
           <th
-            onClick={() => requestSort('orderNumber')}
-            className={getClassNamesFor('orderNumber')}
+            onClick={() => requestSort('OrderNumber')}
+            className={getClassNamesFor('OrderNumber')}
           >
             ID
           </th>
           <th
-            onClick={() => requestSort('orderDate')}
-            className={getClassNamesFor('orderDate')}
+            onClick={() => requestSort('OrderDate')}
+            className={getClassNamesFor('OrderDate')}
           >
             Date
           </th>
           <th
-            onClick={() => requestSort('orderTotal')}
-            className={getClassNamesFor('orderTotal')}
+            onClick={() => requestSort('OrderTotal')}
+            className={getClassNamesFor('OrderTotal')}
           >
             Price
           </th>
           <th
-            onClick={() => requestSort('at')}
-            className={getClassNamesFor('at')}
+            onClick={() => requestSort('At')}
+            className={getClassNamesFor('At')}
           >
             Attempted
           </th>
           <th
-            onClick={() => requestSort('message')}
-            className={getClassNamesFor('message')}
+            onClick={() => requestSort('Message')}
+            className={getClassNamesFor('Message')}
           >
             Error
           </th>
@@ -321,35 +361,35 @@ const UnPulled = props => {
               <td className='select-one'>
                 <Checkbox
                   type='checkbox'
-                  name={item.orderNumber}
-                  value={item.orderNumber}
+                  name={item.OrderNumber}
+                  value={item.OrderNumber}
                   handleClick={handleSelect}
-                  isChecked={isChecked.includes(item.orderNumber)}
+                  isChecked={isChecked.includes(item.OrderNumber)}
                 />
               </td>
               <td>
                 <Link
                   to={{
                     pathname: '/order-view',
-                    state: { order: item.orderNumber, path: 'CrmOrders' },
+                    state: { order: item.OrderNumber, path: 'CrmOrders' },
                   }}
                 >
-                  {item.orderNumber}{' '}
+                  {item.OrderNumber}{' '}
                 </Link>
               </td>
               <td className={`order-dates ${shortenDates}`}>
-                {new Date(parseInt(item.orderDate)).toISOString().split('T')[0]} at{' '}
-                {new Date(parseInt(item.orderDate)).toISOString().split('T')[1].substring(0, 5)}
+                {new Date(parseInt(item.OrderDate)).toISOString().split('T')[0]} at{' '}
+                {new Date(parseInt(item.OrderDate)).toISOString().split('T')[1].substring(0, 5)}
               </td>
-              <td>{formatCurrency(item.orderTotal, item.currencyCode)}</td>
+              <td>{formatCurrency(item.OrderTotal, item.CurrencyCode)}</td>
               <td className={`attempted-dates ${shortenDates}`}>
-                {item.at ? new Date(parseInt(item.at)).toISOString().split('T')[0] : 'None'} at{' '}
-                {item.at ? new Date(parseInt(item.at)).toISOString().split('T')[1].substring(0, 5) : null}
+                {item.At ? new Date(parseInt(item.At)).toISOString().split('T')[0] : 'None'} at{' '}
+                {item.At ? new Date(parseInt(item.At)).toISOString().split('T')[1].substring(0, 5) : null}
               </td>
-              <td name={item.orderNumber} className={`error-message ${toggleShorterError}`} onClick={() => showErrorMessage(item.orderNumber)}>{!toggleShorterError ? item.message : `${item.message.slice(0, 18)} (...)`}</td>
-              <td name={item.orderNumber} id={item.orderNumber} className='error-message-unpulled'>
+              <td name={item.OrderNumber} className={`error-message ${toggleShorterError}`} onClick={() => showErrorMessage(item.OrderNumber)}>{!toggleShorterError ? item.Message : `${item.Message.slice(0, 18)} (...)`}</td>
+              <td name={item.OrderNumber} id={item.OrderNumber} className='error-message-unpulled'>
                 <span className="x-close">X</span>
-                {item.message}
+                {item.Message}
               </td>
             </tr>
           )
@@ -365,8 +405,8 @@ const UnPulled = props => {
           </tr>
       )}
       </tbody>
-    </table>
-  </>
+      </table>
+    </>
   ) : (
     ''
   );
