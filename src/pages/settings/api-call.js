@@ -12,7 +12,7 @@ export default function ApiCall(props) {
   // Call the api.
   useEffect(() => {
     let mounted = true;
-    if (mounted) {
+    if (mounted && props.path) {
       let queryString = `query ${props.path} {${props.path} `;
       queryString += 'maps' === props.path ? `{Id IsoCountryCode ErpCompanyId IsoCurrencyCode ErpCurrencyCode SourceWarehouse SourceShipMethod DestinationWarehouse ReturnsWarehouse IsVAT UseForErpPull ProcessingSequence ActivatedAt DeactivatedAt CreatedAt CreatedBy ModifiedAt ModifiedBy}}` : `{Name Value ModuleId Category SubCategory ValueType Notes EnabledDate CreatedAt CreatedBy ModifiedAt ModifiedBy}}`;
       
@@ -29,14 +29,14 @@ export default function ApiCall(props) {
       };
 
       axios.request(options).then(
-        res => {        
+        res => {
           if (props.path === 'params') {
-              setParams(res.data.data);
-              setIsLoaded(true);
-            } else if (props.path === 'maps') {
-              setMap(res.data.data);
-              setIsLoaded(true);
-            }
+            setParams(res.data.data);
+            setIsLoaded(true);
+          } else if (props.path === 'maps') {
+            setMap(res.data.data);
+            setIsLoaded(true);
+          }
         },
         err => {
           if (mounted) {
@@ -56,6 +56,7 @@ export default function ApiCall(props) {
         error={error}
         isLoaded={isLoaded}
         path={props.path}
+        reCallApi={props.reCallApi}
       />
       <Map 
         mapData={map} 

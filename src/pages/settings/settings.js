@@ -7,10 +7,18 @@ const Settings = () => {
 
   // Click handler: which tab to show, maps or params.
   const handleClick = event => {
-    event.preventDefault();
-    setPath(event.target.value);
-    const chosenButton = event.target.id;
-    let activeButton, inactiveButton;
+    let chosenButton, activeButton, inactiveButton;
+
+    if (typeof event === 'object') {
+      event.preventDefault();
+      setPath(event.target.value);
+      chosenButton = event.target.id;
+    } else {
+      setPath('');
+      setPath(event);
+      chosenButton = event;
+    }
+
     if (chosenButton) {
       activeButton = document.getElementById(chosenButton);
       activeButton.setAttribute('class', 'active-button');
@@ -33,7 +41,7 @@ const Settings = () => {
           </button>
         </form>
       </div>
-      <ApiCall path={path} />
+      <ApiCall path={path} reCallApi={handleClick}/>
     </>
   );
 };

@@ -3,10 +3,7 @@ import useSort from '../../hooks/sort-data';
 import axios from 'axios';
 
 const Params = props => {
-  const [id, setId] = useState('');
-  const [column, setColumn] = useState('');
-  const [prevValue, setPrevValue] = useState('');
-  const [newValue, setNewValue] = useState('');
+  const [newValue, setNewValue] = useState({});
   let { items, requestSort, sortConfig } = useSort(props.paramsData.params, 'params');
   const today = new Date().getTime();
   
@@ -15,33 +12,24 @@ const Params = props => {
     return sortConfig.key === name ? sortConfig.direction : undefined;
   };
 
-  const handleChange = (row, column, rowId, event) => {
-    if (event.key === 'Enter') {
-      setId(rowId);
-      setColumn(column);
-      setPrevValue(event.target.defaultValue);
-      setNewValue(event.target.value);
-      // const newItemsState = items.map((item, idx) => {
-      //   if (idx === row) {
-      //     return { ...item, [column]: newValue };
-      //   }
-      //   return item;
-      // });
-      // items = newItemsState;
-    }
-  }
+  const handleChange = (id, column, event) => {
+      const prevValue = event.target.dataset.defaultValue ? event.target.dataset.defaultValue : '';
+      const newValue = event.target.textContent ? event.target.textContent : '';
+
+      if (prevValue && newValue && prevValue !== newValue) setNewValue({ id, column, prevValue, newValue });
+  };
 
   useEffect(() => {
-    if (props.path === 'params' && id && column && prevValue && newValue) {
-      const queryString = `mutation ${props.path}Update($id: ID!, $column: String!, $prevValue: String!, $newValue: String!) {${props.path}Update(id: $id, column: $column, prevValue: $prevValue, newValue: $newValue) {Name${column !== 'Name' ? ' ' + column : '' }}}`;
+    if (props.path === 'params' && JSON.stringify(newValue) !== '{}') {
+      const queryString = `mutation ${props.path}Update($id: ID!, $column: String!, $prevValue: String!, $newValue: String!) {${props.path}Update(id: $id, column: $column, prevValue: $prevValue, newValue: $newValue) {Name${newValue.column !== 'Name' ? ' ' + newValue.column : '' }}}`;
       const graphQlQuery = {
         operation: `${props.path}Update`,
         query: queryString,
         variables: {
-          id,
-          column,
-          prevValue,
-          newValue
+          id: newValue.id,
+          column: newValue.column,
+          prevValue: newValue.prevValue,
+          newValue: newValue.newValue
         }
       };
       const options = {
@@ -52,16 +40,15 @@ const Params = props => {
       };
   
       axios.request(options).then(
-        res => { console.log({res}) },
+        res => {
+          const response = res.data.data.paramsUpdate ? res.data.data.paramsUpdate.Name : '';
+          if (response && response === newValue.newValue) props.reCallApi('params');
+        },
         err => { console.error({err}) }
       );
     }
 
-    setId('');
-    setColumn('');
-    setPrevValue('');
-    setNewValue('');
-  }, [props.path, column, id, newValue, prevValue]);
+  }, [props, newValue]);
   
   return props.path === 'params' ? (
     <>
@@ -126,8 +113,11 @@ const Params = props => {
                     <td className='checkmark'>&#10003;</td>
                   ) : <td></td>
                 ) : <td></td>}
-                <td>
-                    <input id={`name-${key}`} defaultValue={item.Name} type='string' onKeyPress={(e) => handleChange(key, 'Name', item.Name, e)} />              
+                <td 
+                  contentEditable="true" 
+                  suppressContentEditableWarning="true" 
+                  data-default-value={item.Name} 
+                  onBlur={(e) => handleChange(item.Name, 'Name', e)}>{item.Name}
                 </td>
                 {item.Value && item.Value.includes('|') ? (
                   <td>{item.Value.split('\n').map(val => {
