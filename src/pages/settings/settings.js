@@ -33,15 +33,15 @@ const Settings = () => {
     <>
       <div className='order-actions'>
         <form onSubmit={handleSubmit}>
-          <button className='active-button' id='maps' value='maps' onClick={handleClick}>
+          <button className="active-button" id="maps" value="maps" onClick={handleClick}>
             Warehouse Map
           </button>
-          <button id='params' value='params' onClick={handleClick}>
+          <button className="inactive-button" id="params" value="params" onClick={handleClick}>
             Parameters
           </button>
         </form>
       </div>
-      <ApiCall path={path} reCallApi={handleClick}/>
+      <ApiCall path={path} />
     </>
   );
 };

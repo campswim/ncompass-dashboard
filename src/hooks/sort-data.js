@@ -34,10 +34,12 @@ const useSort = (items, caller) => {
     return sortedItems;
   }, [items, sortConfig]);
 
-  const requestSort = key => {
+  const requestSort = (key, override) => {
     let direction = 'ascending';
-    if (sortConfig.key === key && sortConfig.direction === 'ascending')
-      direction = 'descending';
+    if (!override) {
+      if (sortConfig.key === key && sortConfig.direction === 'ascending') direction = 'descending';
+    } else direction = override;
+
     setSortConfig({ key, direction });
   };
 

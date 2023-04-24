@@ -1,27 +1,122 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import useSort from '../../hooks/sort-data';
+import getType from '../../hooks/get-type';
+import selectElementContents from '../../hooks/select-all';
 import axios from 'axios';
 
 const Params = props => {
   const [newValue, setNewValue] = useState({});
+  const dataType = useRef({}); // => dataType.current = {ColumnName, DataType, MaxLength}
+  const didUpdate = useRef(false);
   let { items, requestSort, sortConfig } = useSort(props.paramsData.params, 'params');
+  const error = items.length === 1 && items[0].Error ? items[0].Error : '';
   const today = new Date().getTime();
-  
-  const getClassNamesFor = name => {
+
+  const getClassNamesFor = useCallback(name => {
     if (!sortConfig) return;
     return sortConfig.key === name ? sortConfig.direction : undefined;
-  };
+  }, [sortConfig]);
 
-  const handleChange = (id, column, event) => {
-      const prevValue = event.target.dataset.defaultValue ? event.target.dataset.defaultValue : '';
-      const newValue = event.target.textContent ? event.target.textContent : '';
+  const handleClick = (event, row, column, id) => {
+    let currentValue = event.textContent;
+    let defaultValue = event.dataset.defaultValue;
+    let element;
+    const vpWidth = window.innerWidth;
 
-      if (prevValue && newValue && prevValue !== newValue) setNewValue({ id, column, prevValue, newValue });
+    if ('✓' === defaultValue) {
+      if (vpWidth >= 528) element = document.getElementById(`checkmark-${row}`);
+      else element = document.getElementById(`mobile-checkmark-${row}`);
+    } else {
+      if (vpWidth >= 528) element = document.getElementById(defaultValue);
+      else element = document.getElementById(`mobile-${defaultValue}`);
+    }
+
+    selectElementContents(element);
+        
+    if ('Name' !== column) { // Editing the Name column is not allowed, it being the PK in the db table.
+      if (defaultValue !== currentValue) { // Replace errors in entries with the previous text; also, check unchecked boxes for the DateEnabled field.
+        element.textContent = defaultValue;
+        element.removeAttribute('style');
+      } else {
+        console.log({defaultValue, currentValue});
+        console.log({column});
+
+        if ('EnabledDate' !== column) element.setAttribute('contentEditable', 'true');
+        else element.textContent = 'No';
+      }
+    }
+
+    if ('EnabledDate' === column) { // Update the EnabledDate in the db with today's date/time (in YYYY-MM-DD HH:MM:SS).
+      currentValue = 'No' === currentValue ? new Date().toISOString() : 'disable';
+      defaultValue = 'disable' || 'No' === currentValue ? `checkmark-${row}` : defaultValue;
+      setNewValue({ id, row, column, prevValue: defaultValue, newValue: currentValue });
+    }
+  }
+
+  // Handle user edits.
+  const handleBlur = (id, row, column, event) => {
+    const prevValue = event.target.dataset.defaultValue ? event.target.dataset.defaultValue : '';
+    const newValue = event.target.textContent ? event.target.textContent : '';
+    const table = 'AppParams';
+    const typeMap = {
+      bool: 'boolean',
+      int: 'number',
+      long: 'bigint',
+      byte: 'number',
+      float: 'number',
+      double: 'number',
+      decimal: 'number',
+      DateTime: 'object',
+      char: 'string',
+      varchar: 'string',
+      object: 'object',
+      string: 'string',
+      JSON: 'object',
+      XML: 'string'
+    };
+    
+    if (prevValue === newValue) {
+      document.getElementById(prevValue).removeAttribute('contentEditable');
+      return;
+    }
+
+    // Get the column's configuration from the DB.
+    if (table && column) {
+      getType(table, column).then(response => { 
+        dataType.current = response.data.getType;
+
+        // Check the input against type and length.
+        if (JSON.stringify(dataType.current) !== '{}') {
+          if (newValue) {
+            if (dataType.current.ColumnName === column) {
+              const type = typeMap[dataType.current.DataType];
+              if (type === typeof newValue) {
+                if (dataType.current.MaxLength > newValue.length) {
+                  if (prevValue !== newValue) {
+                    if (!/<\/?[a-z][\s\S]*>/i.test(newValue)) { // Check that no html is being introduced.
+                      setNewValue({ id, row, column, prevValue, newValue: newValue });
+                    } else {
+                      console.log('There is html in the newValue.');
+                      document.getElementById(prevValue).textContent = prevValue;
+                    }
+                  } 
+                }
+              } else {
+                console.log('The new value\'s datatype (', typeof newValue, ') doesn\'t match the db\'s data type (', dataType.current.DataType, ').');
+              }
+            }
+          } else {
+            document.getElementById(prevValue).textContent = prevValue;
+          }
+        }
+      });
+    }
+
   };
 
   useEffect(() => {
     if (props.path === 'params' && JSON.stringify(newValue) !== '{}') {
-      const queryString = `mutation ${props.path}Update($id: ID!, $column: String!, $prevValue: String!, $newValue: String!) {${props.path}Update(id: $id, column: $column, prevValue: $prevValue, newValue: $newValue) {Name${newValue.column !== 'Name' ? ' ' + newValue.column : '' }}}`;
+      const queryString = `mutation ${props.path}Update($id: ID!, $column: String!, $prevValue: String!, $newValue: String!) {${props.path}Update(id: $id, column: $column, prevValue: $prevValue, newValue: $newValue) {Error {name code message} Name${newValue.column !== 'Name' ? ' ' + newValue.column : '' }}}`;
       const graphQlQuery = {
         operation: `${props.path}Update`,
         query: queryString,
@@ -41,194 +136,291 @@ const Params = props => {
   
       axios.request(options).then(
         res => {
-          const response = res.data.data.paramsUpdate ? res.data.data.paramsUpdate.Name : '';
-          if (response && response === newValue.newValue) props.reCallApi('params');
+          const response = res.data.data.paramsUpdate ? res.data.data.paramsUpdate.Value : '';
+          const error = res.data.data.paramsUpdate ? res.data.data.paramsUpdate.Error : '';
+          // const columnValue = res.data.data.paramsUpdate ? res.data.data.paramsUpdate[newValue.column] : '';
+
+          if (response && response === newValue.newValue) {
+            const element = document.getElementById(newValue.prevValue);
+
+            if (element) {
+              element.removeAttribute('contentEditable');
+              element.textContent = newValue.newValue;
+              items[newValue.row][newValue.column] = newValue.newValue;
+              requestSort(newValue.column, getClassNamesFor(newValue.column));
+            }
+          } else if (error && null !== error.message) {
+            document.getElementById(newValue.prevValue).textContent = error.message + ' Please correct your input.';
+            document.getElementById(newValue.prevValue).setAttribute('style', 'color:red');
+          }
         },
         err => { console.error({err}) }
       );
     }
 
-  }, [props, newValue]);
+    // Scroll the screen to the row that was edited, if needed.
+    if (didUpdate.current) {
+      const newElement = document.getElementById(newValue.newValue);
+      if (newElement) newElement.scrollIntoViewIfNeeded({behavior:'smooth', inline:'start'});
+      didUpdate.current = false;
+    } else didUpdate.current = true;
+  }, [props, newValue, items, requestSort, getClassNamesFor]);
   
-  return props.path === 'params' ? (
-    <>
-      <table className="params-table">
-        <thead>
-          <tr className='header-row'>
-            <th               
-              onClick={() => requestSort('EnabledDate')}
-              className={getClassNamesFor('EnabledDate')}
-            >
-              Enabled
-            </th>
-            <th
-              onClick={() => requestSort('Name')}
-              className={getClassNamesFor('Name')}
-            >
-              Name
-            </th>
-            <th
-              onClick={() => requestSort('Value')}
-              className={getClassNamesFor('Value')}
-            >
-              Value
-            </th>
-            <th
-              onClick={() => requestSort('ModuleId')}
-              className={getClassNamesFor('ModuleId')}
-            >
-              Module ID
-            </th>
-            <th
-              onClick={() => requestSort('Category')}
-              className={getClassNamesFor('Category')}
-            >
-              Category
-            </th>
-            <th
-              onClick={() => requestSort('SubCategory')}
-              className={getClassNamesFor('SubCategory')}
-            >
-              Sub-Category
-            </th>
-            <th
-              onClick={() => requestSort('ValueType')}
-              className={getClassNamesFor('ValueType')}
-            >
-              Value Type
-            </th>
-            <th
-              onClick={() => requestSort('Notes')}
-              className={getClassNamesFor('Notes')}
-            >
-              Notes
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {items.map((item, key) => (
-            <tr key={key}>
-                {item.EnabledDate ? (
-                  new Date(parseInt(item.EnabledDate)).getTime() <= today ? (
-                    <td className='checkmark'>&#10003;</td>
-                  ) : <td></td>
-                ) : <td></td>}
-                <td 
-                  contentEditable="true" 
-                  suppressContentEditableWarning="true" 
-                  data-default-value={item.Name} 
-                  onBlur={(e) => handleChange(item.Name, 'Name', e)}>{item.Name}
-                </td>
-                {item.Value && item.Value.includes('|') ? (
-                  <td>{item.Value.split('\n').map(val => {
-                    const setting = val.split('|');
-                    const key = setting[0];
-                    let value = setting[1];
-                    let result;
-                    if (value && value.includes('~')) value = value.replace('~', ', ');                  
-                    if (value) value = value.trimEnd();
-                    if (value && value[value.length - 1] === ',') value = value.substring(0, value.length - 1);
-                    result = key && value ? `${key}: ${value}\n` : '';
-                    return result;
-                  })}</td>
-                ) : (
-                  <td>{item.Value}</td>
-                )}
-                <td>{item.ModuleId}</td>
-                <td>{item.Category}</td>
-                <td>{item.SubCategory}</td>
-                <td>{item.ValueType}</td>
-                <td className='notes'>{item.Notes}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-
-        {items.map((item, key) => (
-          <table key={key}>
-            <thead className="params-table-vertical">
-              <tr>
-                <th>
+  return props.path === 'params' ?
+  (
+    error ? 
+      (
+        <div>
+          <p>{error.name}: {error.message}</p>
+        </div>
+      ) 
+    :  
+      (
+        <>
+          <table className="params-table">
+            <thead>
+              <tr className='header-row'>
+                <th               
+                  onClick={() => requestSort('EnabledDate')}
+                  className={getClassNamesFor('EnabledDate')}
+                >
                   Enabled
                 </th>
-                {item.EnabledDate ? (
-                  new Date(item.EnabledDate).getTime() <= today ? (
-                    <td className='checkmark'>&#10003;</td>
-                  ) : <td>No</td>
-                ) : <td>No</td>}
-              </tr>
-              <tr>
                 <th
-                  // onClick={() => requestSort('name')}
-                  // className={getClassNamesFor('name')}
+                  onClick={() => requestSort('Name')}
+                  className={getClassNamesFor('Name')}
                 >
                   Name
                 </th>
-                <td>{item.Name}</td>
-              </tr>
-              <tr>
                 <th
-                  // onClick={() => requestSort('value')}
-                  // className={getClassNamesFor('value')}
+                  onClick={() => requestSort('Value')}
+                  className={getClassNamesFor('Value')}
                 >
                   Value
                 </th>
-                <td>{item.Value}</td>
-              </tr>
-              <tr>
                 <th
-                  // onClick={() => requestSort('ModuleId')}
-                  // className={getClassNamesFor('ModuleId')}
+                  onClick={() => requestSort('ModuleId')}
+                  className={getClassNamesFor('ModuleId')}
                 >
-                  Module
+                  Module ID
                 </th>
-                <td>{item.ModuleId}</td>
-              </tr>
-              <tr>
                 <th
-                  // onClick={() => requestSort('Category')}
-                  // className={getClassNamesFor('Category')}
+                  onClick={() => requestSort('Category')}
+                  className={getClassNamesFor('Category')}
                 >
                   Category
                 </th>
-                <td>{item.Category}</td>
-              </tr>
-              <tr>
                 <th
-                  // onClick={() => requestSort('SubCategory')}
-                  // className={getClassNamesFor('SubCategory')}
+                  onClick={() => requestSort('SubCategory')}
+                  className={getClassNamesFor('SubCategory')}
                 >
                   Sub-Category
                 </th>
-                <td>{item.SubCategory}</td>
-              </tr>
-              <tr>
                 <th
-                  // onClick={() => requestSort('ValueType')}
-                  // className={getClassNamesFor('ValueType')}
+                  onClick={() => requestSort('ValueType')}
+                  className={getClassNamesFor('ValueType')}
                 >
                   Value Type
                 </th>
-                <td>{item.ValueType}</td>
-              </tr>
-              <tr>
                 <th
-                  // onClick={() => requestSort('notes')}
-                  // className={getClassNamesFor('notes')}
+                  onClick={() => requestSort('Notes')}
+                  className={getClassNamesFor('Notes')}
                 >
                   Notes
                 </th>
-                <td className='notes'>{item.Notes ? item.Notes : 'None'}</td>
               </tr>
             </thead>
+            <tbody>
+              {items.map((item, key) => (
+                <tr key={key}>
+                  {item.EnabledDate ? 
+                    (
+                      new Date(parseInt(item.EnabledDate)).getTime() <= today ? 
+                      (
+                        <td 
+                          className="checkmark"
+                          suppressContentEditableWarning="true" 
+                          data-default-value="&#10003;"
+                          id={`checkmark-${key}`}
+                          onBlur={(e) => handleBlur(item.Name, key, 'EnabledDate', e)} // params: id, row, column, event
+                          onClick={(e) => handleClick(e.target, key, 'EnabledDate', item.Name, )} // params: event, row, column, id
+                        >
+                          &#10003;
+                        </td>
+                      ) : (
+                        <td
+                          className="checkmark"
+                          suppressContentEditableWarning="true" 
+                          data-default-value="&#10003;"
+                          id={`checkmark-${key}`}
+                          onBlur={(e) => handleBlur(item.Name, key, 'EnabledDate', e)} // params: id, row, column, event
+                          onClick={(e) => handleClick(e.target, key, 'EnabledDate', item.Name, )} // params: event, row, column, id
+                        >No</td>
+                      )
+                    ) : (
+                      <td
+                        className="checkmark"
+                        suppressContentEditableWarning="true" 
+                        data-default-value="&#10003;"
+                        id={`checkmark-${key}`}
+                        onBlur={(e) => handleBlur(item.Name, key, 'EnabledDate', e)} // params: id, row, column, event
+                        onClick={(e) => handleClick(e.target, key, 'EnabledDate', item.Name, )} // params: event, row, column, id
+                      >No</td>
+                    )
+                  }
+                  <td>{item.Name}</td>
+                  {item.Value && item.Value.includes('|') ? 
+                    (
+                      <td
+                        className="editable"
+                        suppressContentEditableWarning="true" 
+                        data-default-value={item.Value.split('\n').map(val => {
+                          const setting = val.split('|');
+                          const key = setting[0];
+                          let value = setting[1];
+                          let result;
+                          if (value && value.includes('~')) value = value.replace('~', ', ');                  
+                          if (value) value = value.trimEnd();
+                          if (value && value[value.length - 1] === ',') value = value.substring(0, value.length - 1);
+                          result = key && value ? `${key}: ${value}\n` : '';
+                          return result;
+                        })}
+                        id={item.Value}
+                        onBlur={(e) => handleBlur(item.Name, key, 'Value', e)}
+                        onClick={(e) => handleClick(e.target, key, 'Value', item.Name)}
+                      >{item.Value.split('\n').map(val => {
+                        const setting = val.split('|');
+                        const key = setting[0];
+                        let value = setting[1];
+                        let result;
+                        if (value && value.includes('~')) value = value.replace('~', ', ');                  
+                        if (value) value = value.trimEnd();
+                        if (value && value[value.length - 1] === ',') value = value.substring(0, value.length - 1);
+                        result = key && value ? `${key}: ${value}\n` : '';
+                        return result;
+                      })}</td>
+                    ) : (
+                      <td
+                        className="editable"
+                        suppressContentEditableWarning="true" 
+                        data-default-value={item.Value}
+                        id={item.Value}
+                        onBlur={(e) => handleBlur(item.Name, key, 'Value', e)}
+                        onClick={(e) => handleClick(e.target, key, 'Value', item.Name)}
+                      >{item.Value}</td>
+                    )
+                  }
+                  <td>{item.ModuleId}</td>
+                  <td>{item.Category}</td>
+                  <td>{item.SubCategory}</td>
+                  <td>{item.ValueType}</td>
+                  <td className="notes editable">{item.Notes}</td>
+                </tr>
+              ))}
+            </tbody>
           </table>
-        )
-      )
-    }
-  </>
-  ) : (
-    ''
-  );
+
+          {items.map((item, key) => (
+            <table key={key}>
+              <thead className="params-table-vertical">
+                <tr>
+                  <th>
+                    Enabled
+                  </th>
+                  {
+                    item.EnabledDate ? 
+                    (
+                      new Date(parseInt(item.EnabledDate)).getTime() <= today ? (
+                        <td 
+                          className="checkmark"
+                          suppressContentEditableWarning="true" 
+                          data-default-value="&#10003;"
+                          id={`mobile-checkmark-${key}`}
+                          onBlur={(e) => handleBlur(item.Name, key, 'EnabledDate', e)} // params: id, row, column, event
+                          onClick={(e) => handleClick(e.target, key, 'EnabledDate', item.Name, )} // params: event, row, column, id
+                        >
+                          &#10003;
+                        </td>
+                      ) : (
+                        <td
+                          className="checkmark"
+                          suppressContentEditableWarning="true" 
+                          data-default-value="&#10003;"
+                          id={`mobile-checkmark-${key}`}
+                          onBlur={(e) => handleBlur(item.Name, key, 'EnabledDate', e)} // params: id, row, column, event
+                          onClick={(e) => handleClick(e.target, key, 'EnabledDate', item.Name, )} // params: event, row, column, id
+                        >No</td>
+                      )
+                    ) : (
+                      <td
+                        className="checkmark"
+                        suppressContentEditableWarning="true" 
+                        data-default-value="&#10003;"
+                        id={`mobile-checkmark-${key}`}
+                        onBlur={(e) => handleBlur(item.Name, key, 'EnabledDate', e)} // params: id, row, column, event
+                        onClick={(e) => handleClick(e.target, key, 'EnabledDate', item.Name, )} // params: event, row, column, id
+                      >No</td>
+                    )
+                  }
+                </tr>
+                <tr><th>Name</th><td>{item.Name}</td></tr>
+                <tr>
+                  <th>Value</th>
+                  {item.Value && item.Value.includes('|') ? 
+                    (
+                      <td
+                        className="editable"
+                        suppressContentEditableWarning="true" 
+                        data-default-value={item.Value.split('\n').map(val => {
+                          const setting = val.split('|');
+                          const key = setting[0];
+                          let value = setting[1];
+                          let result;
+                          if (value && value.includes('~')) value = value.replace('~', ', ');                  
+                          if (value) value = value.trimEnd();
+                          if (value && value[value.length - 1] === ',') value = value.substring(0, value.length - 1);
+                          result = key && value ? `${key}: ${value}\n` : '';
+                          return result;
+                        })}
+                        id={`mobile-${item.Value}`}
+                        onBlur={(e) => handleBlur(item.Name, key, 'Value', e)}
+                        onClick={(e) => handleClick(e.target, key, 'Value', item.Name)}
+                      >{item.Value.split('\n').map(val => {
+                        const setting = val.split('|');
+                        const key = setting[0];
+                        let value = setting[1];
+                        let result;
+                        if (value && value.includes('~')) value = value.replace('~', ', ');                  
+                        if (value) value = value.trimEnd();
+                        if (value && value[value.length - 1] === ',') value = value.substring(0, value.length - 1);
+                        result = key && value ? `${key}: ${value}\n` : '';
+                        return result;
+                      })}</td>
+                    ) : (
+                      <td
+                        className="editable"
+                        suppressContentEditableWarning="true" 
+                        data-default-value={item.Value}
+                        id={`mobile-${item.Value}`}
+                        onBlur={(e) => handleBlur(item.Name, key, 'Value', e)}
+                        onClick={(e) => handleClick(e.target, key, 'Value', item.Name)}
+                      >{item.Value}</td>
+                    )
+                  }
+                </tr>
+                <tr><th>Module</th><td>{item.ModuleId}</td></tr>
+                <tr><th>Category</th><td>{item.Category}</td></tr>
+                <tr><th>Sub-Category</th><td>{item.SubCategory}</td></tr>
+                <tr><th>Value Type</th><td>{item.ValueType}</td></tr>
+                <tr><th>Notes</th><td className='notes'>{item.Notes ? item.Notes : 'None'}</td></tr>
+              </thead>
+            </table>
+          ))}
+        </>
+      ) 
+    ) : (
+      ''
+  )
 };
 
 export default Params;

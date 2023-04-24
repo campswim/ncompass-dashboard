@@ -14,7 +14,7 @@ export default function ApiCall(props) {
     let mounted = true;
     if (mounted && props.path) {
       let queryString = `query ${props.path} {${props.path} `;
-      queryString += 'maps' === props.path ? `{Id IsoCountryCode ErpCompanyId IsoCurrencyCode ErpCurrencyCode SourceWarehouse SourceShipMethod DestinationWarehouse ReturnsWarehouse IsVAT UseForErpPull ProcessingSequence ActivatedAt DeactivatedAt CreatedAt CreatedBy ModifiedAt ModifiedBy}}` : `{Name Value ModuleId Category SubCategory ValueType Notes EnabledDate CreatedAt CreatedBy ModifiedAt ModifiedBy}}`;
+      queryString += 'maps' === props.path ? `{Id IsoCountryCode ErpCompanyId IsoCurrencyCode ErpCurrencyCode SourceWarehouse SourceShipMethod DestinationWarehouse ReturnsWarehouse IsVAT UseForErpPull ProcessingSequence ActivatedAt DeactivatedAt CreatedAt CreatedBy ModifiedAt ModifiedBy Error {name code message}}}` : `{Name Value ModuleId Category SubCategory ValueType Notes EnabledDate CreatedAt CreatedBy ModifiedAt ModifiedBy Error {name code message}}}`;
       
       const graphQlQuery = {
         operation: props.path,
@@ -56,7 +56,6 @@ export default function ApiCall(props) {
         error={error}
         isLoaded={isLoaded}
         path={props.path}
-        reCallApi={props.reCallApi}
       />
       <Map 
         mapData={map} 

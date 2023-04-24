@@ -18,15 +18,15 @@
 .map-tables {
   display: none;
 }
-.map-id {
-  display: none;
-}
 .map-tables-mobile {
   display: none;
 }
+.editable:hover {
+  cursor: default;
+}
 
 // -------------- Media Queries --------------
-@media all and (max-width: 1605px) {
+@media all and (max-width: 1705px) {
   .params-table, .map-table-large > table {
    font-size: 1.2rem;
  }
