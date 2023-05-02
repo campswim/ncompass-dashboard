@@ -57,11 +57,11 @@ th {
   transition: all 500ms ease;
 }
 
-th:hover {
+th:hover, th.header-editable:hover {
+  cursor: pointer;
   color: orange;
   background-color: cornflowerblue;
   border-radius: 7px 7px 0 0;
-  cursor: pointer;
 
   -webkit-transition: all 500ms ease;
   -moz-transition: all 500ms ease;
@@ -74,8 +74,54 @@ th:hover {
   }
 }
 
+th.header-editable {
+  position: relative;
+}
+th.header-editable > span {
+  // visibility: hidden;
+  position: absolute;
+  top: -1000rem;
+  left: -1000rem;
+}
+
+th.header-editable:hover > span {
+  // visibility: visibile;
+  animation: fadeinout 5s linear forwards;
+  -webkit-animation: fadeinout 5s linear forwards;
+  opacity: 1;
+  position: absolute;
+  top: 3rem;
+  left: 1rem;
+  background-color: whitesmoke;
+  padding: 1rem;
+  border: 1px solid black;
+  z-index: 99;
+  border-radius: 7px;
+  width: 20rem;
+  word-break: normal;
+  white-space: normal;
+}
+
+@-webkit-keyframes fadeinout {
+  0%, 100% { opacity: 0; }
+  10%, 70% { opacity: 1; }
+}
+
+@keyframes fadeinout {
+  0%, 100% { opacity: 0; }
+  10%, 70% { opacity: 1; }
+}
+
+th.header-editable:hover::after {
+  content: '\270F';
+  visibility: visible;
+  margin-left: 1rem;
+  font-size: 1.4rem;
+  font-weight: bolder;
+}
+
 th::after {
-  content: '\2191';
+  content: '\270F';
   visibility: hidden;
   margin-left: 1rem;
   font-size: 1.4rem;

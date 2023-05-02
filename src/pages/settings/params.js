@@ -7,30 +7,30 @@ import axios from 'axios';
 const Params = props => {
   const [newValue, setNewValue] = useState({});
   const dataType = useRef({}); // => dataType.current = {ColumnName, DataType, MaxLength}
-  const didUpdate = useRef(false);
   let { items, requestSort, sortConfig } = useSort(props.paramsData.params, 'params');
-  const error = items.length === 1 && items[0].Error ? items[0].Error : '';
+  const error = items && items.length === 1 && items[0].Error ? items[0].Error : '';
   const today = new Date().getTime();
 
   const getClassNamesFor = useCallback(name => {
     if (!sortConfig) return;
-    return sortConfig.key === name ? sortConfig.direction : undefined;
+    let className = 'Name' !== name ? 'header-editable' : '';
+    className = sortConfig.key === name ? sortConfig.direction + ' ' + className : className;
+    return className ? className : undefined;
   }, [sortConfig]);
 
   const handleClick = (event, row, column, id) => {
     let currentValue = event.textContent;
-    let defaultValue = event.dataset.defaultValue;
-    let element;
+    let defaultValue = event.dataset.defaultValue, element;
     const vpWidth = window.innerWidth;
 
     if ('✓' === defaultValue) {
       if (vpWidth >= 528) element = document.getElementById(`checkmark-${row}`);
       else element = document.getElementById(`mobile-checkmark-${row}`);
     } else {
-      if (vpWidth >= 528) element = document.getElementById(defaultValue);
-      else element = document.getElementById(`mobile-${defaultValue}`);
+      if (vpWidth >= 528) element = document.getElementById(`${defaultValue}-${row}`);
+      else element = document.getElementById(`mobile-${defaultValue}-${row}`);
     }
-
+    
     selectElementContents(element);
         
     if ('Name' !== column) { // Editing the Name column is not allowed, it being the PK in the db table.
@@ -38,9 +38,6 @@ const Params = props => {
         element.textContent = defaultValue;
         element.removeAttribute('style');
       } else {
-        console.log({defaultValue, currentValue});
-        console.log({column});
-
         if ('EnabledDate' !== column) element.setAttribute('contentEditable', 'true');
         else element.textContent = 'No';
       }
@@ -74,9 +71,11 @@ const Params = props => {
       JSON: 'object',
       XML: 'string'
     };
-    
+    const vpWidth = window.innerWidth;
+    const element = vpWidth >= 528 ? document.getElementById(`${prevValue}-${row}`) : document.getElementById(`mobile-${prevValue}-${row}`);
+
     if (prevValue === newValue) {
-      document.getElementById(prevValue).removeAttribute('contentEditable');
+      element.removeAttribute('contentEditable');
       return;
     }
 
@@ -97,7 +96,7 @@ const Params = props => {
                       setNewValue({ id, row, column, prevValue, newValue: newValue });
                     } else {
                       console.log('There is html in the newValue.');
-                      document.getElementById(prevValue).textContent = prevValue;
+                      element.textContent = prevValue;
                     }
                   } 
                 }
@@ -106,15 +105,19 @@ const Params = props => {
               }
             }
           } else {
-            document.getElementById(prevValue).textContent = prevValue;
+            element.textContent = prevValue;
           }
         }
       });
     }
-
   };
 
   useEffect(() => {
+    const vpWidth = window.innerWidth;
+    const element = vpWidth >= 528 ? document.getElementById(`${newValue.prevValue}-${newValue.row}`) : document.getElementById(`mobile-${newValue.prevValue}-${newValue.row}`);
+    let newElement;
+
+
     if (props.path === 'params' && JSON.stringify(newValue) !== '{}') {
       const queryString = `mutation ${props.path}Update($id: ID!, $column: String!, $prevValue: String!, $newValue: String!) {${props.path}Update(id: $id, column: $column, prevValue: $prevValue, newValue: $newValue) {Error {name code message} Name${newValue.column !== 'Name' ? ' ' + newValue.column : '' }}}`;
       const graphQlQuery = {
@@ -141,17 +144,28 @@ const Params = props => {
           // const columnValue = res.data.data.paramsUpdate ? res.data.data.paramsUpdate[newValue.column] : '';
 
           if (response && response === newValue.newValue) {
-            const element = document.getElementById(newValue.prevValue);
-
             if (element) {
               element.removeAttribute('contentEditable');
               element.textContent = newValue.newValue;
+              element.setAttribute('id', `${newValue.newValue}-${newValue.row}`);
+              element.setAttribute('data-default-value', newValue.newValue)
               items[newValue.row][newValue.column] = newValue.newValue;
-              requestSort(newValue.column, getClassNamesFor(newValue.column));
+              // requestSort(newValue.column, getClassNamesFor(newValue.column)); // The re-sort works, but I can't figure out how to get the updated item after the re-sort.
+              newElement = vpWidth >= 528 ? document.getElementById(`${newValue.newValue}-${newValue.row}`) : document.getElementById(`mobile-${newValue.newValue}-${newValue.row}`);
+
+              if (newElement) {
+                newElement.scrollIntoViewIfNeeded({behavior:'smooth', inline:'start'});
+                newElement.classList.toggle('edited');
+                setTimeout(() => { newElement.classList.toggle('re-sorted'); }, 3000);
+                setTimeout(() => {
+                  newElement.classList.toggle('edited');
+                  newElement.classList.toggle('re-sorted');
+                }, 6000);
+              }
             }
           } else if (error && null !== error.message) {
-            document.getElementById(newValue.prevValue).textContent = error.message + ' Please correct your input.';
-            document.getElementById(newValue.prevValue).setAttribute('style', 'color:red');
+            element.textContent = error.message + ' Please correct your input.';
+            element.setAttribute('style', 'color:red');
           }
         },
         err => { console.error({err}) }
@@ -159,11 +173,20 @@ const Params = props => {
     }
 
     // Scroll the screen to the row that was edited, if needed.
-    if (didUpdate.current) {
-      const newElement = document.getElementById(newValue.newValue);
-      if (newElement) newElement.scrollIntoViewIfNeeded({behavior:'smooth', inline:'start'});
-      didUpdate.current = false;
-    } else didUpdate.current = true;
+    // if (newElement) 
+
+    // Add instructions to the table headers to be displayed on hover.
+    const parentElement = document.getElementsByClassName('header-editable');
+    if (parentElement) {
+      for (const el of parentElement) {
+        const html = el.innerHTML;
+        if (!html.includes('<span>')) {
+          if (vpWidth >= 528) el.innerHTML = html + '<span>Double-click in any of this column\'s fields to edit its contents.</span>';
+          else el.innerHTML = html + '<span>Tap on this field\'s value to highlight and change it.';
+        }
+      }
+    }
+
   }, [props, newValue, items, requestSort, getClassNamesFor]);
   
   return props.path === 'params' ?
@@ -238,7 +261,7 @@ const Params = props => {
                       new Date(parseInt(item.EnabledDate)).getTime() <= today ? 
                       (
                         <td 
-                          className="checkmark"
+                          className="checkmark editable"
                           suppressContentEditableWarning="true" 
                           data-default-value="&#10003;"
                           id={`checkmark-${key}`}
@@ -249,7 +272,7 @@ const Params = props => {
                         </td>
                       ) : (
                         <td
-                          className="checkmark"
+                          className="checkmark editable"
                           suppressContentEditableWarning="true" 
                           data-default-value="&#10003;"
                           id={`checkmark-${key}`}
@@ -259,7 +282,7 @@ const Params = props => {
                       )
                     ) : (
                       <td
-                        className="checkmark"
+                        className="checkmark editable"
                         suppressContentEditableWarning="true" 
                         data-default-value="&#10003;"
                         id={`checkmark-${key}`}
@@ -277,15 +300,14 @@ const Params = props => {
                         data-default-value={item.Value.split('\n').map(val => {
                           const setting = val.split('|');
                           const key = setting[0];
-                          let value = setting[1];
-                          let result;
+                          let value = setting[1], result;
                           if (value && value.includes('~')) value = value.replace('~', ', ');                  
                           if (value) value = value.trimEnd();
                           if (value && value[value.length - 1] === ',') value = value.substring(0, value.length - 1);
                           result = key && value ? `${key}: ${value}\n` : '';
                           return result;
                         })}
-                        id={item.Value}
+                        id={`${item.Value}-${key}`}
                         onBlur={(e) => handleBlur(item.Name, key, 'Value', e)}
                         onClick={(e) => handleClick(e.target, key, 'Value', item.Name)}
                       >{item.Value.split('\n').map(val => {
@@ -304,10 +326,11 @@ const Params = props => {
                         className="editable"
                         suppressContentEditableWarning="true" 
                         data-default-value={item.Value}
-                        id={item.Value}
+                        id={`${item.Value}-${key}`}
                         onBlur={(e) => handleBlur(item.Name, key, 'Value', e)}
                         onClick={(e) => handleClick(e.target, key, 'Value', item.Name)}
-                      >{item.Value}</td>
+                      >{item.Value}
+                      </td>
                     )
                   }
                   <td>{item.ModuleId}</td>
@@ -319,12 +342,13 @@ const Params = props => {
               ))}
             </tbody>
           </table>
-
+          
+          { /* Display the table vertically for mobile. */ }
           {items.map((item, key) => (
             <table key={key}>
               <thead className="params-table-vertical">
                 <tr>
-                  <th>
+                  <th className={getClassNamesFor('EnabledDate')}>
                     Enabled
                   </th>
                   {
@@ -365,7 +389,7 @@ const Params = props => {
                 </tr>
                 <tr><th>Name</th><td>{item.Name}</td></tr>
                 <tr>
-                  <th>Value</th>
+                  <th className={getClassNamesFor('Value')}>Value</th>
                   {item.Value && item.Value.includes('|') ? 
                     (
                       <td
@@ -408,11 +432,11 @@ const Params = props => {
                     )
                   }
                 </tr>
-                <tr><th>Module</th><td>{item.ModuleId}</td></tr>
-                <tr><th>Category</th><td>{item.Category}</td></tr>
-                <tr><th>Sub-Category</th><td>{item.SubCategory}</td></tr>
-                <tr><th>Value Type</th><td>{item.ValueType}</td></tr>
-                <tr><th>Notes</th><td className='notes'>{item.Notes ? item.Notes : 'None'}</td></tr>
+                <tr><th className={getClassNamesFor('ModuleId')}>Module</th><td>{item.ModuleId}</td></tr>
+                <tr><th className={getClassNamesFor('Category')}>Category</th><td>{item.Category}</td></tr>
+                <tr><th className={getClassNamesFor('SubCategory')}>Sub-Category</th><td>{item.SubCategory}</td></tr>
+                <tr><th className={getClassNamesFor('ValueType')}>Value Type</th><td>{item.ValueType}</td></tr>
+                <tr><th className={getClassNamesFor('Notes')}>Notes</th><td className='notes'>{item.Notes ? item.Notes : 'None'}</td></tr>
               </thead>
             </table>
           ))}

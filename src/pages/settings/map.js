@@ -8,8 +8,8 @@ const Map = props => {
     if (!sortConfig) return;
     return sortConfig.key === name ? sortConfig.direction : undefined;
   };
-  const error = items.length === 1 && items[0].Error ? items[0].Error : '';
-  
+  const error = items && items.length === 1 && items[0].Error ? items[0].Error : '';
+    
   return props.path === 'maps' ? 
   (
     props.error ? 

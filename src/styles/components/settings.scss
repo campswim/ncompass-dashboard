@@ -24,6 +24,27 @@
 .editable:hover {
   cursor: default;
 }
+.edited {
+  color: #6495ed;
+  font-weight: bolder;
+  font-size: 1.5rem;
+  -webkit-transition: all 2s ease;
+  -moz-transition: all 2s ease;
+  -ms-transition: all 2s ease;
+  -o-transition: all 2s ease;
+  transition: all 2s ease;
+
+}
+.re-sorted {
+  color: inherit;
+  font-weight: normal;
+  font-size: 12px;
+  -webkit-transition: all 2s ease;
+  -moz-transition: all 2s ease;
+  -ms-transition: all 2s ease;
+  -o-transition: all 2s ease;
+  transition: all 2s ease;
+}
 
 // -------------- Media Queries --------------
 @media all and (max-width: 1705px) {
@@ -98,7 +119,7 @@
    }
 
    th:hover {
-     color: cornflowerblue;
+    //  color: cornflowerblue;
      cursor: default;
      border-radius: 7px 7px 0 0;
    }
