@@ -1,16 +1,18 @@
 import axios from 'axios';
 
-export default async function getType(table, column) {  
-  if (!column) return;
+export default async function logChange(table, column, value, user = 'admin') {  
+  if (!column || !value) return;
 
-  const queryString = 'query getType($table: String!, $column: String!) {getType(table: $table, column: $column) {ColumnName DataType MaxLength}}';
+  const queryString = 'query logChange($table: String!, $column: String!, $value: String!, $user: String!) {logChange(table: $table, column: $column, value: $value, user: $user) {TableName, ColumnName Value, User}}';
   
   const graphQlQuery = {
-    operation: 'getType',
+    operation: 'logChange',
     query: queryString,
     variables: {
       table,
-      column
+      column,
+      value,
+      user
     }
   };
   const options = {

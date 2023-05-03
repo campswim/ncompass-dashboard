@@ -51,17 +51,21 @@ export default function ApiCall(props) {
       
   return (
     <>
-      <Params
-        paramsData={params}
-        error={error}
-        isLoaded={isLoaded}
-        path={props.path}
-      />
-      <Map 
-        mapData={map} 
-        error={error} 
-        isLoaded={isLoaded} 
-        path={props.path} />
+      {props.path === 'params' ? 
+        <Params
+          paramsData={params}
+          error={error}
+          isLoaded={isLoaded}
+          path={props.path}
+        />
+      :
+        <Map 
+          mapData={map} 
+          error={error} 
+          isLoaded={isLoaded} 
+          path={props.path} 
+        />
+      }
     </>
   );
 }

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import useSort from '../../hooks/sort-data';
 import getType from '../../hooks/get-type';
 import selectElementContents from '../../hooks/select-all';
+import logChange from '../../hooks/log-change';
 import axios from 'axios';
 
 const Params = props => {
@@ -31,7 +32,7 @@ const Params = props => {
       else element = document.getElementById(`mobile-${defaultValue}-${row}`);
     }
     
-    selectElementContents(element);
+    selectElementContents(element); // Selects all content in the field.
         
     if ('Name' !== column) { // Editing the Name column is not allowed, it being the PK in the db table.
       if (defaultValue !== currentValue) { // Replace errors in entries with the previous text; also, check unchecked boxes for the DateEnabled field.
@@ -81,27 +82,39 @@ const Params = props => {
 
     // Get the column's configuration from the DB.
     if (table && column) {
-      getType(table, column).then(response => { 
+      getType(table, column).then(response => {
         dataType.current = response.data.getType;
 
         // Check the input against type and length.
         if (JSON.stringify(dataType.current) !== '{}') {
           if (newValue) {
-            if (dataType.current.ColumnName === column) {
+            const columnName = dataType.current.ColumnName;
+            if (columnName === column) {
               const type = typeMap[dataType.current.DataType];
-              if (type === typeof newValue) {
-                if (dataType.current.MaxLength > newValue.length) {
+              let typeNewValue = columnName === 'ValueType' ? parseInt(newValue) : newValue;
+              typeNewValue = typeNewValue.isNaN ? typeNewValue : typeof typeNewValue;
+ 
+              if (type === typeNewValue) {
+                if (dataType.current.MaxLength > newValue.length || !dataType.current.MaxLength) {
                   if (prevValue !== newValue) {
                     if (!/<\/?[a-z][\s\S]*>/i.test(newValue)) { // Check that no html is being introduced.
                       setNewValue({ id, row, column, prevValue, newValue: newValue });
+                      element.textContent = newValue;
                     } else {
-                      console.log('There is html in the newValue.');
-                      element.textContent = prevValue;
+                      element.setAttribute('style', 'color: red');
+                      element.textContent = 'There is html in the new value. Please revise your input and resubmit.';
+                      element.scrollIntoViewIfNeeded({behavior:'smooth', inline:'start'});
+                      // setTimeout(() => {
+                      //   element.textContent = prevValue;
+                      //   element.removeAttribute('style');
+                      // }, 5000);
                     }
                   } 
                 }
               } else {
-                console.log('The new value\'s datatype (', typeof newValue, ') doesn\'t match the db\'s data type (', dataType.current.DataType, ').');
+                element.setAttribute('style', 'color: red');
+                element.textContent = `The new value's datatype (${typeof newValue}) doesn't match the databases's data type (${type}).`;
+                element.scrollIntoViewIfNeeded({behavior:'smooth', inline:'start'});
               }
             }
           } else {
@@ -114,9 +127,9 @@ const Params = props => {
 
   useEffect(() => {
     const vpWidth = window.innerWidth;
-    const element = vpWidth >= 528 ? document.getElementById(`${newValue.prevValue}-${newValue.row}`) : document.getElementById(`mobile-${newValue.prevValue}-${newValue.row}`);
+    const element = document.getElementById(`${newValue.prevValue}-${newValue.row}`);
+    const mobileElement = document.getElementById(`mobile-${newValue.prevValue}-${newValue.row}`);
     let newElement;
-
 
     if (props.path === 'params' && JSON.stringify(newValue) !== '{}') {
       const queryString = `mutation ${props.path}Update($id: ID!, $column: String!, $prevValue: String!, $newValue: String!) {${props.path}Update(id: $id, column: $column, prevValue: $prevValue, newValue: $newValue) {Error {name code message} Name${newValue.column !== 'Name' ? ' ' + newValue.column : '' }}}`;
@@ -139,21 +152,28 @@ const Params = props => {
   
       axios.request(options).then(
         res => {
-          const response = res.data.data.paramsUpdate ? res.data.data.paramsUpdate.Value : '';
+          let response = res.data.data.paramsUpdate ? res.data.data.paramsUpdate[newValue.column] : '';
           const error = res.data.data.paramsUpdate ? res.data.data.paramsUpdate.Error : '';
-          // const columnValue = res.data.data.paramsUpdate ? res.data.data.paramsUpdate[newValue.column] : '';
+
+          if (typeof response === 'number') response = JSON.stringify(response);
 
           if (response && response === newValue.newValue) {
-            if (element) {
+            if (element || mobileElement) {
+              const newId = `${newValue.newValue}-${newValue.row}`;
+              const newMobileId = `mobile-${newValue.newValue}-${newValue.row}`;
               element.removeAttribute('contentEditable');
+              mobileElement.removeAttribute('contentEditable');
               element.textContent = newValue.newValue;
-              element.setAttribute('id', `${newValue.newValue}-${newValue.row}`);
-              element.setAttribute('data-default-value', newValue.newValue)
+              mobileElement.textContent = newValue.newValue;
+              element.setAttribute('id', newId);
+              mobileElement.setAttribute('id', newMobileId);
+              element.setAttribute('data-default-value', newValue.newValue);
+              mobileElement.setAttribute('data-default-value', newValue.newValue);
               items[newValue.row][newValue.column] = newValue.newValue;
               // requestSort(newValue.column, getClassNamesFor(newValue.column)); // The re-sort works, but I can't figure out how to get the updated item after the re-sort.
               newElement = vpWidth >= 528 ? document.getElementById(`${newValue.newValue}-${newValue.row}`) : document.getElementById(`mobile-${newValue.newValue}-${newValue.row}`);
 
-              if (newElement) {
+              if (newElement) { // Scroll the edited element into view to communicate to the user that the change was accepted.
                 newElement.scrollIntoViewIfNeeded({behavior:'smooth', inline:'start'});
                 newElement.classList.toggle('edited');
                 setTimeout(() => { newElement.classList.toggle('re-sorted'); }, 3000);
@@ -162,6 +182,10 @@ const Params = props => {
                   newElement.classList.toggle('re-sorted');
                 }, 6000);
               }
+
+              // Log the change to the database.
+              const user = 'admin'; // There's no authentication yet built into this app.
+              logChange('AppParams', newValue.ColumnName, newValue.newValue, user);
             }
           } else if (error && null !== error.message) {
             element.textContent = error.message + ' Please correct your input.';
@@ -172,33 +196,38 @@ const Params = props => {
       );
     }
 
-    // Scroll the screen to the row that was edited, if needed.
-    // if (newElement) 
-
     // Add instructions to the table headers to be displayed on hover.
-    const parentElement = document.getElementsByClassName('header-editable');
-    if (parentElement) {
-      for (const el of parentElement) {
-        const html = el.innerHTML;
-        if (!html.includes('<span>')) {
-          if (vpWidth >= 528) el.innerHTML = html + '<span>Double-click in any of this column\'s fields to edit its contents.</span>';
-          else el.innerHTML = html + '<span>Tap on this field\'s value to highlight and change it.';
-        }
-      }
-    }
+    // const parentElement = document.getElementsByClassName('header-editable');
+    // if (parentElement) {
+    //   for (const el of parentElement) {
+    //     const html = el.innerHTML;
+    //     if (!html.includes('<span>')) {
+    //       if (vpWidth >= 528) el.innerHTML = html + '<span>Double-click in any of this column\'s fields to edit its contents.</span>';
+    //       else el.innerHTML = html + '<span>Tap on this field\'s value to highlight and change it.';
+    //     }
+    //   }
+    // }
 
   }, [props, newValue, items, requestSort, getClassNamesFor]);
   
   return props.path === 'params' ?
   (
-    error ? 
-      (
-        <div>
-          <p>{error.name}: {error.message}</p>
-        </div>
-      ) 
-    :  
-      (
+    props.error ? 
+    ( 
+      <div>{props.error.message}</div> 
+    ) 
+    : !props.isLoaded ? 
+    ( 
+      <div>Loading...</div> 
+    ) 
+    : error ? 
+    (
+      <div>
+        <p>{error.name}: {error.message}</p>
+      </div>
+    ) 
+    : 
+    (
         <>
           <table className="params-table">
             <thead>
@@ -221,12 +250,12 @@ const Params = props => {
                 >
                   Value
                 </th>
-                <th
+                {/* <th
                   onClick={() => requestSort('ModuleId')}
                   className={getClassNamesFor('ModuleId')}
                 >
                   Module ID
-                </th>
+                </th> */}
                 <th
                   onClick={() => requestSort('Category')}
                   className={getClassNamesFor('Category')}
@@ -333,11 +362,43 @@ const Params = props => {
                       </td>
                     )
                   }
-                  <td>{item.ModuleId}</td>
-                  <td>{item.Category}</td>
-                  <td>{item.SubCategory}</td>
-                  <td>{item.ValueType}</td>
-                  <td className="notes editable">{item.Notes}</td>
+                  {/* <td>{item.ModuleId}</td> */}
+                  <td
+                    className="editable"
+                    suppressContentEditableWarning="true" 
+                    data-default-value={item.Category}
+                    id={`${item.Category}-${key}`}
+                    onBlur={(e) => handleBlur(item.Name, key, 'Category', e)}
+                    onClick={(e) => handleClick(e.target, key, 'Category', item.Name)}
+                  >{item.Category}</td>
+                  <td
+                    className="editable"
+                    suppressContentEditableWarning="true" 
+                    data-default-value={item.SubCategory}
+                    id={`${item.SubCategory}-${key}`}
+                    onBlur={(e) => handleBlur(item.Name, key, 'SubCategory', e)}
+                    onClick={(e) => handleClick(e.target, key, 'SubCategory', item.Name)}                  
+                  >{item.SubCategory}</td>
+                  <td
+                    className="editable"
+                    suppressContentEditableWarning="true" 
+                    data-default-value={item.ValueType}
+                    id={`${item.ValueType}-${key}`}
+                    onBlur={(e) => handleBlur(item.Name, key, 'ValueType', e)}
+                    onClick={(e) => handleClick(e.target, key, 'ValueType', item.Name)}                  
+                  >
+                    {item.ValueType}
+                  </td>
+                  <td 
+                    className="notes editable"
+                    suppressContentEditableWarning="true" 
+                    data-default-value={item.Notes}
+                    id={`${item.Notes}-${key}`}
+                    onBlur={(e) => handleBlur(item.Name, key, 'Notes', e)}
+                    onClick={(e) => handleClick(e.target, key, 'Notes', item.Name)}                  
+                  >
+                    {item.Notes}
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -356,7 +417,7 @@ const Params = props => {
                     (
                       new Date(parseInt(item.EnabledDate)).getTime() <= today ? (
                         <td 
-                          className="checkmark"
+                          className="checkmark editable"
                           suppressContentEditableWarning="true" 
                           data-default-value="&#10003;"
                           id={`mobile-checkmark-${key}`}
@@ -367,7 +428,7 @@ const Params = props => {
                         </td>
                       ) : (
                         <td
-                          className="checkmark"
+                          className="checkmark editable"
                           suppressContentEditableWarning="true" 
                           data-default-value="&#10003;"
                           id={`mobile-checkmark-${key}`}
@@ -377,7 +438,7 @@ const Params = props => {
                       )
                     ) : (
                       <td
-                        className="checkmark"
+                        className="checkmark editable"
                         suppressContentEditableWarning="true" 
                         data-default-value="&#10003;"
                         id={`mobile-checkmark-${key}`}
@@ -406,7 +467,7 @@ const Params = props => {
                           result = key && value ? `${key}: ${value}\n` : '';
                           return result;
                         })}
-                        id={`mobile-${item.Value}`}
+                        id={`mobile-${item.Value}-${key}`}
                         onBlur={(e) => handleBlur(item.Name, key, 'Value', e)}
                         onClick={(e) => handleClick(e.target, key, 'Value', item.Name)}
                       >{item.Value.split('\n').map(val => {
@@ -425,18 +486,66 @@ const Params = props => {
                         className="editable"
                         suppressContentEditableWarning="true" 
                         data-default-value={item.Value}
-                        id={`mobile-${item.Value}`}
+                        id={`mobile-${item.Value}-${key}`}
                         onBlur={(e) => handleBlur(item.Name, key, 'Value', e)}
                         onClick={(e) => handleClick(e.target, key, 'Value', item.Name)}
                       >{item.Value}</td>
                     )
                   }
                 </tr>
-                <tr><th className={getClassNamesFor('ModuleId')}>Module</th><td>{item.ModuleId}</td></tr>
-                <tr><th className={getClassNamesFor('Category')}>Category</th><td>{item.Category}</td></tr>
-                <tr><th className={getClassNamesFor('SubCategory')}>Sub-Category</th><td>{item.SubCategory}</td></tr>
-                <tr><th className={getClassNamesFor('ValueType')}>Value Type</th><td>{item.ValueType}</td></tr>
-                <tr><th className={getClassNamesFor('Notes')}>Notes</th><td className='notes'>{item.Notes ? item.Notes : 'None'}</td></tr>
+                {/* <tr><th className={getClassNamesFor('ModuleId')}>Module</th><td>{item.ModuleId}</td></tr> */}
+                <tr>
+                  <th className={getClassNamesFor('Category')}>Category</th>
+                  <td
+                    className="editable"
+                    suppressContentEditableWarning="true" 
+                    data-default-value={item.Category}
+                    id={`mobile-${item.Category}-${key}`}
+                    onBlur={(e) => handleBlur(item.Name, key, 'Category', e)}
+                    onClick={(e) => handleClick(e.target, key, 'Category', item.Name)}
+                  >
+                    {item.Category}
+                  </td>
+                </tr>
+                <tr>
+                  <th className={getClassNamesFor('SubCategory')}>Sub-Category</th>
+                  <td
+                    className="editable"
+                    suppressContentEditableWarning="true" 
+                    data-default-value={item.SubCategory}
+                    id={`mobile-${item.SubCategory}-${key}`}
+                    onBlur={(e) => handleBlur(item.Name, key, 'SubCategory', e)}
+                    onClick={(e) => handleClick(e.target, key, 'SubCategory', item.Name)}                  
+                  >
+                    {item.SubCategory}
+                  </td>
+                </tr>
+                <tr>
+                  <th className={getClassNamesFor('ValueType')}>Value Type</th>
+                  <td
+                    className="editable"
+                    suppressContentEditableWarning="true" 
+                    data-default-value={item.ValueType}
+                    id={`mobile-${item.ValueType}-${key}`}
+                    onBlur={(e) => handleBlur(item.Name, key, 'ValueType', e)}
+                    onClick={(e) => handleClick(e.target, key, 'ValueType', item.Name)}                  
+                  >
+                    {item.ValueType}
+                  </td>
+                </tr>
+                <tr>
+                  <th className={getClassNamesFor('Notes')}>Notes</th>
+                  <td 
+                    className="notes editable"
+                    suppressContentEditableWarning="true" 
+                    data-default-value={item.Notes}
+                    id={`mobile-${item.Notes}-${key}`}
+                    onBlur={(e) => handleBlur(item.Name, key, 'Notes', e)}
+                    onClick={(e) => handleClick(e.target, key, 'Notes', item.Name)}                  
+                  >
+                    {item.Notes ? item.Notes : 'None'}
+                  </td>
+                </tr>
               </thead>
             </table>
           ))}
