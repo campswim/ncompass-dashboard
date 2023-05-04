@@ -396,14 +396,15 @@ const UnPushed = props => {
                   />
                 </td>
                 <td>
-                  <Link
+                  {/* <Link
                     to={{
                       pathname: '/order-view',
                       state: { order: item.OrderNumber, path: 'StagingOrders' },
                     }}
                   >
                     {item.OrderNumber}{' '}
-                  </Link>
+                  </Link> */}
+                  {item.OrderNumber}
                 </td>
                 <td className="reduceable-td">{item.Market}</td>
                 <td>{item.Warehouse}</td>

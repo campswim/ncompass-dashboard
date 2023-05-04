@@ -62,23 +62,25 @@ const NavBar = () => {
 
   const links = (
       routes.map((prop, key) => {
-        return prop.path === '/order-view' ? (
-          <NavLink
-            to={{
-              pathname: prop.path,
-              state: {
-                order: inputId ? inputId : linkId,
-            },
-            }}
-            key={key}
-            className='nav-link'
-            activeStyle={{ border: '1px solid cornflowerblue', borderRadius: '20px', margin: '0', color: 'orange' }}
-          >
-            <ListItem button style={{ padding: '0 1rem 0 1.5rem', margin: '0' }}>
-              <prop.icon style={{ fontSize: '2rem', padding: '0', margin: '0' }} />
-              <h5 value={prop.name} className='list-item-text'>{prop.name}</h5>
-            </ListItem>
-          </NavLink>
+        return prop.path === '/order-view' ? 
+        (
+          // <NavLink
+          //   to={{
+          //     pathname: prop.path,
+          //     state: {
+          //       order: inputId ? inputId : linkId,
+          //   },
+          //   }}
+          //   key={key}
+          //   className='nav-link'
+          //   activeStyle={{ border: '1px solid cornflowerblue', borderRadius: '20px', margin: '0', color: 'orange' }}
+          // >
+          //   <ListItem style={{ padding: '0 1rem 0 1.5rem', margin: '0' }}>
+          //     <prop.icon style={{ fontSize: '2rem', padding: '0', margin: '0' }} />
+          //     <h5 value={prop.name} className='list-item-text'>{prop.name}</h5>
+          //   </ListItem>
+          // </NavLink>
+          ''
         ) : (
           <NavLink
             to={prop.path}
@@ -87,7 +89,7 @@ const NavBar = () => {
             id={prop.name}
             activeStyle={{ border: '1px solid cornflowerblue', borderRadius: '20px', margin: '0', color: 'orange' }}
           >
-            <ListItem button style={{ padding: '0 1rem 0 1.5rem', margin: '0' }}>
+            <ListItem style={{ padding: '0 1rem 0 1.5rem', margin: '0' }}>
               <prop.icon style={{ fontSize: '2rem', padding: '0', margin: '0' }} />
               <h5 value={prop.name} className='list-item-text'>{prop.name}</h5>
             </ListItem>

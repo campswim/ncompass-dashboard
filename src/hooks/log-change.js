@@ -1,9 +1,9 @@
 import axios from 'axios';
 
-export default async function logChange(table, column, value, user = 'admin') {  
-  if (!column || !value) return;
+export default async function logChange(table, column, row, prevValue, newValue, dataType, user = '') {
+  if (!column || !newValue) return;
 
-  const queryString = 'query logChange($table: String!, $column: String!, $value: String!, $user: String!) {logChange(table: $table, column: $column, value: $value, user: $user) {TableName, ColumnName Value, User}}';
+  const queryString = 'query logChange($table: String!, $column: String!, $row: String!, $prevValue: String!, $newValue: String!, $dataType: Int!, $user: String!) {logChange(table: $table, column: $column, row: $row, prevValue: $prevValue, newValue: $newValue, dataType: $dataType, user: $user) {Id, TableName, ColumnName, PrevValue, NewValue, DataType, User, DateTime}}';
   
   const graphQlQuery = {
     operation: 'logChange',
@@ -11,7 +11,10 @@ export default async function logChange(table, column, value, user = 'admin') {
     variables: {
       table,
       column,
-      value,
+      row,
+      prevValue,
+      newValue,
+      dataType,
       user
     }
   };
@@ -23,7 +26,9 @@ export default async function logChange(table, column, value, user = 'admin') {
   };
 
   return await axios.request(options).then(
-    res => { return res.data },
+    res => {  
+      return res.data 
+    },
     err => { console.error({err}) }
   );
 }

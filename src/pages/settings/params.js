@@ -8,6 +8,9 @@ import axios from 'axios';
 const Params = props => {
   const [newValue, setNewValue] = useState({});
   const dataType = useRef({}); // => dataType.current = {ColumnName, DataType, MaxLength}
+  const changeDate = useRef('');
+  const clickCount = useRef(0);
+  const clickLocation = useRef('');
   let { items, requestSort, sortConfig } = useSort(props.paramsData.params, 'params');
   const error = items && items.length === 1 && items[0].Error ? items[0].Error : '';
   const today = new Date().getTime();
@@ -32,8 +35,11 @@ const Params = props => {
       else element = document.getElementById(`mobile-${defaultValue}-${row}`);
     }
     
-    selectElementContents(element); // Selects all content in the field.
-        
+    if (clickLocation.current !== event.id) clickCount.current = 0;
+    if (clickCount.current <= 1) selectElementContents(element); // Selects all content in the field.
+    clickCount.current++;
+    clickLocation.current = event.id;
+
     if ('Name' !== column) { // Editing the Name column is not allowed, it being the PK in the db table.
       if (defaultValue !== currentValue) { // Replace errors in entries with the previous text; also, check unchecked boxes for the DateEnabled field.
         element.textContent = defaultValue;
@@ -92,8 +98,8 @@ const Params = props => {
             if (columnName === column) {
               const type = typeMap[dataType.current.DataType];
               let typeNewValue = columnName === 'ValueType' ? parseInt(newValue) : newValue;
-              typeNewValue = typeNewValue.isNaN ? typeNewValue : typeof typeNewValue;
- 
+              typeNewValue = Number.isNaN(typeNewValue) ? typeNewValue : typeof typeNewValue;
+
               if (type === typeNewValue) {
                 if (dataType.current.MaxLength > newValue.length || !dataType.current.MaxLength) {
                   if (prevValue !== newValue) {
@@ -132,7 +138,7 @@ const Params = props => {
     let newElement;
 
     if (props.path === 'params' && JSON.stringify(newValue) !== '{}') {
-      const queryString = `mutation ${props.path}Update($id: ID!, $column: String!, $prevValue: String!, $newValue: String!) {${props.path}Update(id: $id, column: $column, prevValue: $prevValue, newValue: $newValue) {Error {name code message} Name${newValue.column !== 'Name' ? ' ' + newValue.column : '' }}}`;
+      const queryString = `mutation ${props.path}Update($id: ID!, $column: String!, $prevValue: String!, $newValue: String!) {${props.path}Update(id: $id, column: $column, prevValue: $prevValue, newValue: $newValue) {Error {name code message} Name${newValue.column !== 'Name' ? ' ' + newValue.column : '' } ValueType}}`;
       const graphQlQuery = {
         operation: `${props.path}Update`,
         query: queryString,
@@ -152,12 +158,12 @@ const Params = props => {
   
       axios.request(options).then(
         res => {
-          let response = res.data.data.paramsUpdate ? res.data.data.paramsUpdate[newValue.column] : '';
+          let value = res.data.data.paramsUpdate ? res.data.data.paramsUpdate[newValue.column] : '';
+          const valueType = res.data.data.paramsUpdate ? res.data.data.paramsUpdate.ValueType : '';
           const error = res.data.data.paramsUpdate ? res.data.data.paramsUpdate.Error : '';
 
-          if (typeof response === 'number') response = JSON.stringify(response);
-
-          if (response && response === newValue.newValue) {
+          if (typeof value === 'number') value = JSON.stringify(value);
+          if (value && value === newValue.newValue) {
             if (element || mobileElement) {
               const newId = `${newValue.newValue}-${newValue.row}`;
               const newMobileId = `mobile-${newValue.newValue}-${newValue.row}`;
@@ -182,14 +188,27 @@ const Params = props => {
                   newElement.classList.toggle('re-sorted');
                 }, 6000);
               }
-
-              // Log the change to the database.
-              const user = 'admin'; // There's no authentication yet built into this app.
-              logChange('AppParams', newValue.ColumnName, newValue.newValue, user);
             }
+
+            // Log the change to the database.
+            logChange('AppParams', newValue.column, newValue.id, newValue.prevValue, newValue.newValue, valueType)
+            .then(res => {
+              const changeDateTime = res.data.logChange.DateTime;
+              changeDate.current = changeDateTime;
+            });
           } else if (error && null !== error.message) {
             element.textContent = error.message + ' Please correct your input.';
             element.setAttribute('style', 'color:red');
+          } else { // Special logging for the date-enabled column.
+            if (newValue.column === 'EnabledDate') {
+              const current = newValue.newValue === 'disable' ? 'disabled' : 'enabled';
+              const previous = current === 'disabled' ? 'enabled' : 'disabled';
+              logChange('AppParams', newValue.column, newValue.id, previous, current, valueType)
+              .then(res => {
+                const changeDateTime = res.data.logChange.DateTime;
+                changeDate.current = changeDateTime;
+              });
+            }
           }
         },
         err => { console.error({err}) }

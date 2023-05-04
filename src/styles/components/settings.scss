@@ -7,6 +7,7 @@
 .params-table td {
   white-space: pre-wrap;
   word-wrap: break-word;
+  word-break: break-word;
 }
 .params-table-vertical {
   display: none;
@@ -27,7 +28,7 @@
 .edited {
   color: orange;
   font-weight: bolder;
-  font-size: 1.5rem;
+  font-size: 2rem;
   -webkit-transition: all 2s ease;
   -moz-transition: all 2s ease;
   -ms-transition: all 2s ease;
@@ -38,7 +39,7 @@
 .re-sorted {
   color: inherit;
   font-weight: normal;
-  font-size: 12px;
+  font-size: 15px;
   -webkit-transition: all 2s ease;
   -moz-transition: all 2s ease;
   -ms-transition: all 2s ease;

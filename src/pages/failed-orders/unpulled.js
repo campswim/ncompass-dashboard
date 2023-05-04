@@ -140,7 +140,7 @@ const UnPulled = props => {
       for (let i = 0; i < items.length; i++) {
         const cell = longAttemptedDates[i];
         const at = new Date(parseInt(items[i].At)).toISOString();
-        cell.textContent = items[i].at ? `${at.split('T')[0]} at ${at.split('T')[1].substring(0, 5)}` : 'None';
+        cell.textContent = items[i].At ? `${at.split('T')[0]} at ${at.split('T')[1].substring(0, 5)}` : 'None';
       };
     }
   }
@@ -332,7 +332,7 @@ const UnPulled = props => {
             onClick={() => requestSort('OrderDate')}
             className={getClassNamesFor('OrderDate')}
           >
-            Date
+            Order Date
           </th>
           <th
             onClick={() => requestSort('OrderTotal')}
@@ -355,55 +355,56 @@ const UnPulled = props => {
         </tr>
       </thead>
       <tbody>
-      {items.length !== 0 ? (
-        items.map((item, key) => (
-          <tr key={key}>
-              <td className='select-one'>
-                <Checkbox
-                  type='checkbox'
-                  name={item.OrderNumber}
-                  value={item.OrderNumber}
-                  handleClick={handleSelect}
-                  isChecked={isChecked.includes(item.OrderNumber)}
-                />
-              </td>
-              <td>
-                <Link
-                  to={{
-                    pathname: '/order-view',
-                    state: { order: item.OrderNumber, path: 'CrmOrders' },
-                  }}
-                >
-                  {item.OrderNumber}{' '}
-                </Link>
-              </td>
-              <td className={`order-dates ${shortenDates}`}>
-                {new Date(parseInt(item.OrderDate)).toISOString().split('T')[0]} at{' '}
-                {new Date(parseInt(item.OrderDate)).toISOString().split('T')[1].substring(0, 5)}
-              </td>
-              <td>{formatCurrency(item.OrderTotal, item.CurrencyCode)}</td>
-              <td className={`attempted-dates ${shortenDates}`}>
-                {item.At ? new Date(parseInt(item.At)).toISOString().split('T')[0] : 'None'} at{' '}
-                {item.At ? new Date(parseInt(item.At)).toISOString().split('T')[1].substring(0, 5) : null}
-              </td>
-              <td name={item.OrderNumber} className={`error-message ${toggleShorterError}`} onClick={() => showErrorMessage(item.OrderNumber)}>{!toggleShorterError ? item.Message : `${item.Message.slice(0, 18)} (...)`}</td>
-              <td name={item.OrderNumber} id={item.OrderNumber} className='error-message-unpulled'>
-                <span className="x-close">X</span>
-                {item.Message}
-              </td>
-            </tr>
+        {items.length !== 0 ? (
+          items.map((item, key) => (
+            <tr key={key}>
+                <td className='select-one'>
+                  <Checkbox
+                    type='checkbox'
+                    name={item.OrderNumber}
+                    value={item.OrderNumber}
+                    handleClick={handleSelect}
+                    isChecked={isChecked.includes(item.OrderNumber)}
+                  />
+                </td>
+                <td>
+                  {/* <Link
+                    to={{
+                      pathname: '/order-view',
+                      state: { order: item.OrderNumber, path: 'CrmOrders' },
+                    }}
+                  >
+                    {item.OrderNumber}{' '}
+                  </Link> */}
+                  {item.OrderNumber}
+                </td>
+                <td className={`order-dates ${shortenDates}`}>
+                  {new Date(parseInt(item.OrderDate)).toISOString().split('T')[0]} at{' '}
+                  {new Date(parseInt(item.OrderDate)).toISOString().split('T')[1].substring(0, 5)}
+                </td>
+                <td>{formatCurrency(item.OrderTotal, item.CurrencyCode)}</td>
+                <td className={`attempted-dates ${shortenDates}`}>
+                  {item.At ? new Date(parseInt(item.At)).toISOString().split('T')[0] : 'None'} at {' '}
+                  {item.At ? new Date(parseInt(item.At)).toISOString().split('T')[1].substring(0, 5) : null}
+                </td>
+                <td name={item.OrderNumber} className={`error-message ${toggleShorterError}`} onClick={() => showErrorMessage(item.OrderNumber)}>{!toggleShorterError ? item.Message : `${item.Message.slice(0, 18)} (...)`}</td>
+                <td name={item.OrderNumber} id={item.OrderNumber} className='error-message-unpulled'>
+                  <span className="x-close">X</span>
+                  {item.Message}
+                </td>
+              </tr>
+            )
           )
-        )
-      ) : (
-          <tr>
-            <td className='hidden-checkbox'></td>
-            <td>None</td>
-            <td>None</td>
-            <td>None</td>
-            <td>None</td>
-            <td>None</td>
-          </tr>
-      )}
+        ) : (
+            <tr>
+              <td className='hidden-checkbox'></td>
+              <td>None</td>
+              <td>None</td>
+              <td>None</td>
+              <td>None</td>
+              <td>None</td>
+            </tr>
+        )}
       </tbody>
       </table>
     </>
